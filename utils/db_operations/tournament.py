@@ -7,7 +7,7 @@ class tournament:
     
     # Create new tournament if it doesn't exist
     def create_tournament(self, tournament_name, url, participants, is_side_event=False, state='upcoming'):
-        # Check if tournament already exists
+    # Check if tournament already exists
         self.cursor.execute(
             "SELECT * FROM tblTournaments WHERE name=%s AND url=%s",
             (tournament_name, url)
@@ -28,7 +28,6 @@ class tournament:
             "SELECT * FROM tblTournaments WHERE name=%s AND url=%s",
             (tournament_name, url)
         )
-
         return self.cursor.fetchone()
     
     # Update participant count
@@ -60,9 +59,52 @@ class tournament:
         )
         return self.cursor.fetchone()
     
+    def get_tournament_by_id(self, tournament_id):
+        self.cursor.execute(
+            "SELECT * FROM tblTournaments WHERE id=%s",
+            (tournament_id,)
+        )
+        return self.cursor.fetchone()
+    
     def get_tournament_by_url(self, url):
+        # Clear out any previous queries
+        self.cursor.fetchall()
+        
         self.cursor.execute(
             "SELECT * FROM tblTournaments WHERE url=%s",
             (url,)
         )
         return self.cursor.fetchone()   
+    
+    def set_attendance_id(self, tournament_id, attendance_id):
+        self.cursor.execute(
+            "UPDATE tblTournaments SET attendance_id=%s WHERE id=%s",
+            (attendance_id, tournament_id)
+        )
+        self.db.commit()
+        
+        self.cursor.execute(
+            "SELECT * FROM tblTournaments WHERE id=%s",
+            (tournament_id,)
+        )
+        return self.cursor.fetchone()
+    
+    def set_finalized(self, tournament_id):
+        self.cursor.execute(
+            "UPDATE tblTournaments SET finalized=1 WHERE id=%s",
+            (tournament_id,)
+        )
+        self.db.commit()
+        
+        self.cursor.execute(
+            "SELECT * FROM tblTournaments WHERE id=%s",
+            (tournament_id,)
+        )
+        return self.cursor.fetchone()
+    
+    def get_finalized_status(self, tournament_id):
+        self.cursor.execute(
+            "SELECT finalized FROM tblTournaments WHERE id=%s OR url=%s",
+            (tournament_id, tournament_id,)
+        )
+        return self.cursor.fetchone()

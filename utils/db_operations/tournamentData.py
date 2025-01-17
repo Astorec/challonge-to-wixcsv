@@ -24,6 +24,13 @@ class tournamentData:
         )
         return self.cursor.fetchone()
     
+    def get_tournament_data(self, tournament_id):
+        self.cursor.execute(
+            "SELECT * FROM tblTournamentData WHERE tournament_id=%s",
+            (tournament_id,)
+        )
+        return self.cursor.fetchall()
+    
     def add_win(self, tournament_id, player_db_id):
         self.cursor.execute(
             "UPDATE tblTournamentData SET wins=wins+1 WHERE tournament_id=%s AND player_db_id=%s",
@@ -77,28 +84,52 @@ class tournamentData:
         return self.cursor.fetchone()
     
     def add_placement(self, tournament_id, player_db_id, placement):
-        
+        placement_column = ""
         if placement == 1:
-            placement = "first_place"
+            placement_column = "first_place"
         elif placement == 2:
-            placement = "second_place"
+            placement_column = "second_place"
         elif placement == 3:
-            placement = "third_place"
+            placement_column = "third_place"
         elif placement == 4:
-            placement = "fourth_place"
+            placement_column = "fourth_place"
         elif placement == 5:
-            placement = "fifth_place"
+            placement_column = "fifth_place"
         elif placement == 6:
-            placement = "sixth_place"
+            placement_column = "sixth_place"
         elif placement == 7:
-            placement = "seventh_place"
+            placement_column = "seventh_place"
         elif placement == 8:
-            placement = "eighth_place"
+            placement_column = "eighth_place"
+        elif placement == 9:
+            placement_column = "ninth_place"
+        elif placement == 10:
+            placement_column = "tenth_place"
+        elif placement == 11:
+            placement_column = "eleventh_place"
+        elif placement == 12:
+            placement_column = "twelfth_place"
+        elif placement == 13:
+            placement_column = "thirteenth_place"
+        elif placement == 14:
+            placement_column = "fourteenth_place"
+        elif placement == 15:
+            placement_column = "fifteenth_place"
+        elif placement == 16:
+            placement_column = "sixteenth_place"
         
-        self.cursor.execute(
-            f"UPDATE tblTournamentData SET {placement}={placement}+1 WHERE tournament_id=%s AND player_db_id=%s",
-            (tournament_id, player_db_id)
+        
+        if placement_column == "":
+               self.cursor.execute(
+            f"UPDATE tblTournamentData SET`rank`=%s WHERE tournament_id=%s AND player_db_id=%s",
+            (placement, tournament_id, player_db_id)
         )
+        else:                        
+            self.cursor.execute(
+                f"UPDATE tblTournamentData SET {placement_column}={placement_column}+1, `rank`=%s WHERE tournament_id=%s AND player_db_id=%s",
+                (placement, tournament_id, player_db_id)
+            )
+            
         self.db.commit()
         
         self.cursor.execute(
@@ -107,73 +138,41 @@ class tournamentData:
         )
         return self.cursor.fetchone()
     
-    def sort_data_by_score_add_rank(self):
-        # Query to calculate points and sort players
-        query = """
-        SELECT 
-            td.player_db_id,
-            (SUM(td.wins) + 
-            SUM(td.first_place) * 5 + 
-            SUM(td.second_place) * 4 + 
-            SUM(td.third_place) * 3 + 
-            SUM(td.fourth_place) * 2 + 
-            SUM(td.fifth_place) * 1 + 
-            SUM(td.sixth_place) * 1 + 
-            SUM(td.seventh_place) * 1 + 
-            SUM(td.eighth_place) * 1) AS total_points
-        FROM 
-            tblTournamentData td
-        GROUP BY 
-            td.player_db_id
-        ORDER BY 
-            total_points DESC;
-        """
+    def update_win_percentage(self, tournament_id, player_db_id):
+        self.cursor.execute(
+            "SELECT wins, losses FROM tblTournamentData WHERE tournament_id=%s AND player_db_id=%s",
+            (tournament_id, player_db_id)
+        )
+        result = self.cursor.fetchone()
         
-        self.cursor.execute(query)
-        results = self.cursor.fetchall()
-        ranked_results = []
-        # Update rank for each player
-        rank = 1
-        for row in results:
-            player_db_id = row[0]
-            update_query = """
-            UPDATE tblTournamentData
-            SET `rank` = %s
-            WHERE player_db_id = %s;
-            """
-            self.cursor.execute(update_query, (rank, player_db_id))
-            rank += 1
+        if result is None:
+            print(f"No data found for tournament_id={tournament_id} and player_db_id={player_db_id}")
+            return
         
-        self.db.commit()
+        wins, losses = result
+        
+        if wins + losses == 0:
+            win_percentage = decimal.Decimal(0)
+        else:
+            win_percentage = decimal.Decimal(wins) / decimal.Decimal(wins + losses)
         
         self.cursor.execute(
-            """        SELECT 
-            td.rank, 
-            p.username, 
-            (SUM(td.wins) + 
-            SUM(td.first_place) * 5 + 
-            SUM(td.second_place) * 4 + 
-            SUM(td.third_place) * 3 + 
-            SUM(td.fourth_place) * 2 + 
-            SUM(td.fifth_place) * 1 + 
-            SUM(td.sixth_place) * 1 + 
-            SUM(td.seventh_place) * 1 + 
-            SUM(td.eighth_place) * 1) AS total_points 
-        FROM 
-            tblTournamentData td 
-        JOIN 
-            tblPlayers p ON td.player_db_id = p.id 
-        GROUP BY 
-            td.rank, p.username 
-        ORDER BY 
-            total_points DESC"""
+            "UPDATE tblTournamentData SET win_percentage=%s WHERE tournament_id=%s AND player_db_id=%s",
+            (win_percentage, tournament_id, player_db_id)
         )
-        updated_results = self.cursor.fetchall()
-        
-        # Convert Decimal to float for total_points in updated results
-        final_results = []
-        for row in updated_results:
-            total_points = float(row[2]) if isinstance(row[2], decimal.Decimal) else row[2]
-            final_results.append((row[0], row[1], total_points))
-        
-        return final_results
+        self.db.commit()
+   
+    def get_top_cut(self, tournament_id, placement):
+        # Sort by rank and get amount based on placement
+        self.cursor.execute(
+            "SELECT * FROM tblTournamentData WHERE tournament_id=%s ORDER BY `rank` ASC LIMIT %s",
+            (tournament_id, placement)
+        )
+        return self.cursor.fetchall()
+
+    def get_all_players_with_scores(self, tournament_id):
+        self.cursor.execute(
+            "SELECT * FROM tblTournamentData WHERE tournament_id=%s ORDER BY `rank` ASC",
+            (tournament_id,)
+        )
+        return self.cursor.fetchall()

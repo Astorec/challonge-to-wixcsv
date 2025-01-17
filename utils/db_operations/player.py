@@ -27,6 +27,15 @@ class player:
             
             self.db.commit()
             
+            # If username is none, set query to get the player by name
+            if not username:
+                self.cursor.execute(
+                    "SELECT * FROM tblPlayers WHERE name=%s",
+                    (name,)
+                )
+                return self.cursor.fetchone()
+            
+            
             # return the newly created player
             self.cursor.execute(
                 "SELECT * FROM tblPlayers WHERE name=%s AND username=%s",
@@ -43,6 +52,13 @@ class player:
         self.cursor.execute(
             "SELECT * FROM tblPlayers WHERE username=%s",
             (username,)
+        )
+        return self.cursor.fetchone()
+    
+    def get_player_by_name(self, name):
+        self.cursor.execute(
+            "SELECT * FROM tblPlayers WHERE name=%s",
+            (name,)
         )
         return self.cursor.fetchone()
     

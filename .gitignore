@@ -181,3 +181,5 @@ config/config.json
 
 # Ignore tempCodeRunnerFile.py
 tempCodeRunnerFile.py
+utils/leaderboard/top_cuts.json
+config/tournament_data.json
