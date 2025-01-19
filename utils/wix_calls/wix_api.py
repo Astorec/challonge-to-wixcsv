@@ -3,166 +3,152 @@ import requests
 from utils import misc
 
 
-def call(config, api_key, site_id, account_id, data, tournament_name, region_id, region, is_side_event=False):
-        headers= {
-            "Authorization": api_key,
-            "Content-Type": "application/json",
-            "wix-account-id": account_id,
-            "wix-site-id": site_id
-        }
+def call(config, api_key, site_id, account_id, data, tournament_name, region, is_side_event=False):
+    headers = {
+        "Authorization": api_key,
+        "Content-Type": "application/json",
+        "wix-account-id": account_id,
+        "wix-site-id": site_id
+    }
+    if not is_side_event:
+        create_main_board(headers, data[0], config['wix_collection']['main_board_id'] )
+        create_regional_board(headers, data[1], region[1])
         
-        if not is_side_event:
-            post_data = {
-                "dataCollectionId": config['wix_collection']['main_board_id']
-            }
-            
-            current_data = requests.post("https://www.wixapis.com/wix-data/v2/items/query", headers=headers, data=json.dumps(post_data))
-            
-            if current_data.status_code == 200:
-                print("Got the view data")
-                
-            data_item_ids = []
-            
-            for item in current_data.json()['dataItems']:
-                data_item_ids.append(item['id'])
-            
-            if len(data_item_ids) > 0:
-                delete_data = {
-                    "dataCollectionId": config['wix_collection']['main_board_id'],
-                    "dataItemIds": data_item_ids
-                }
-                requests.post("https://www.wixapis.com/wix-data/v2/bulk/items/remove", headers=headers, data=json.dumps(delete_data))
-            
-            data_items = []
-            
-            for row in data[0]:
-                data_items.append({
-                    "data": {                    
-                        "rank": row[0],
-                        "username": row[1],
-                        "total_points": row[2]
-                    }
-                })
-                
-            post_data = {
-                "dataCollectionId": "Import216",
-                "dataItems": data_items
-            }
-            
-            print(f"Data Items: {data_items}")
-            
-            requests.post("https://www.wixapis.com/wix-data/v2/bulk/items/insert", headers=headers, data=json.dumps(post_data, cls=misc.DecimalEncoder))
-            
-            
-            # Check to see if we have a collection already made for the region
-            region_name = region.get_region_by_id(region_id)[1]
-            
-            post_data = {
-                "dataCollectionId": region_name
-            }
-            
-            current_data = requests.post("https://www.wixapis.com/wix-data/v2/items/query", headers=headers, data=json.dumps(post_data))
-            r_id = region_name.replace(" ", "-")
-            if current_data.status_code == 200:
-                print("Got the view data")
-            else:
-                # Create the id by removing spaces and replacing with dashes
+    create_tournament_board(headers, data[2], tournament_name)  
         
-                # Create the collection
-                post_data = {
-                    "collection": {
-                        "id": r_id,
-                        "name": region_name,
-                    }
-                }
-                
-                current_data = requests.post("https://www.wixapis.com/wix-data/v2/collections", headers=headers, data=json.dumps(post_data))
-            
-            data_item_ids = []
+def create_main_board(headers, data, main_board_data):
+    main_board_name = main_board_data.replace("_", " ")
+    post_data = {
+         "dataCollectionId": main_board_data
+    }        
+    current_data = requests.post("https://www.wixapis.com/wix-data/v2/items/query", headers=headers, data=json.dumps(post_data))
         
-            for item in current_data.json()['dataItems']:
-                data_item_ids.append(item['id'])
-            
-            if len(data_item_ids) > 0:
-                delete_data = {
-                    "dataCollectionId": r_id,
-                    "dataItemIds": data_item_ids
-                }
-                requests.post("https://www.wixapis.com/wix-data/v2/bulk/items/remove", headers=headers, data=json.dumps(delete_data))
-            
-            data_items = []
-            
-            print(f"Data: {data[2]}")
-            for row in data[2]:
-                data_items.append({
-                    "data": {
-                        "rank": row[0],
-                        "username": row[1],
-                        "total_points": row[2]
-                    }
-                })
-                
-            post_data = {
-                "dataCollectionId": r_id,
-                "dataItems": data_items
-            }
-        
-            print(f"Data Items: {data_items}")
-            requests.post("https://www.wixapis.com/wix-data/v2/bulk/items/insert", headers=headers, data=json.dumps(post_data, cls=misc.DecimalEncoder))
-            
-            
-        # Check to see if we have a collection already made for the tournament name
-        post_data = {
-            "dataCollectionId": tournament_name
-        }
-        
-        current_data = requests.post("https://www.wixapis.com/wix-data/v2/items/query", headers=headers, data=json.dumps(post_data))
-        
-        if current_data.status_code == 404:
-            print("Creating new collection")
-            post_data = {
-                "collection": {
-                    "id": tournament_name,
-                    "name": tournament_name,
-                }
-            }
-            
-            current_data = requests.post("https://www.wixapis.com/wix-data/v2/collections", headers=headers, data=json.dumps(post_data))
-        
-        # Create the id by removing spaces and replacing with dashes
-        t_id = tournament_name.replace(" ", "-")
-            
-        if current_data.status_code == 200:
-            print("Got the view data")
-        
+    if current_data.status_code == 200:
         data_item_ids = []
-        
         for item in current_data.json()['dataItems']:
             data_item_ids.append(item['id'])
-        
-        if len(data_item_ids) > 0:
-            delete_data = {
-                "dataCollectionId": t_id,
-                "dataItemIds": data_item_ids
-            }
-            requests.post("https://www.wixapis.com/wix-data/v2/bulk/items/remove", headers=headers, data=json.dumps(delete_data))
-            
-        data_items = []
-        
-        for row in data[1]:
-            data_items.append({
-                "data": {
-                    "rank": row[0],
-                    "username": row[1],
-                    "total_points": row[2]
-                }
-            })
-            
-        post_data = {
-            "dataCollectionId": t_id,
-            "dataItems": data_items
-        }
-        
-        print(f"Data Items: {data_items}")
-        
+                
+        delete_data_items(headers, data_item_ids, main_board_data, current_data, post_data)            
         current_data = requests.post("https://www.wixapis.com/wix-data/v2/items/query", headers=headers, data=json.dumps(post_data))
+    else:     
+        current_data = create_new_collection(headers, main_board_data, main_board_name)
+    
+    create_data_items(data, headers, main_board_data)
+
+def create_regional_board(headers, data, region):
+    board_id = f"{region.replace(' ', '_')}_Board"
+    board_name = f"{region} Board"
+    post_data = {
+         "dataCollectionId": board_id
+    }        
+    current_data = requests.post("https://www.wixapis.com/wix-data/v2/items/query", headers=headers, data=json.dumps(post_data))
+        
+    if current_data.status_code == 200:
+        data_item_ids = []
+        for item in current_data.json()['dataItems']:
+            data_item_ids.append(item['id'])
+                
+        delete_data_items(headers, data_item_ids, board_id,current_data, post_data)            
+        current_data = requests.post("https://www.wixapis.com/wix-data/v2/items/query", headers=headers, data=json.dumps(post_data))
+    else:     
+        current_data = create_new_collection(headers, board_id, board_name)
+    
+    create_data_items(data, headers,board_id)
+    
+def create_tournament_board(headers, data, tournament_name):
+    board_id = f"{tournament_name}_Board"
+    board_name = f"{tournament_name} Board"
+    post_data = {
+        "dataCollectionId": board_id
+    }        
+    current_data = requests.post("https://www.wixapis.com/wix-data/v2/items/query", headers=headers, data=json.dumps(post_data))
+        
+    if current_data.status_code == 200:
+        data_item_ids = []
+        for item in current_data.json()['dataItems']:
+            data_item_ids.append(item['id'])
+                
+        delete_data_items(headers, data_item_ids, board_id, current_data, post_data)            
+        current_data = requests.post("https://www.wixapis.com/wix-data/v2/items/query", headers=headers, data=json.dumps(post_data))
+    else:     
+        current_data = create_new_collection(headers, board_id, board_name)
+    
+    create_data_items(data, headers, board_id)
+
+def create_new_collection(headers, collection_id, collection_name):
+    post_data = {
+                 "collection": {
+                    "id": collection_id,
+                    "displayName": collection_name,
+                    "fields":[
+                        {
+                            "key": "rank",
+                            "displayName": "Rank",
+                            "type": "NUMBER"
+                        },
+                        {
+                            "key": "username",
+                            "displayName": "Username",
+                            "type": "TEXT"
+                        },
+                        {
+                            "key": "total_points",
+                            "displayName": "Points",
+                            "type": "NUMBER"
+                        },
+                        {
+                            "key": "win_percentage",
+                            "displayName": "Win Percentage",
+                            "type": "NUMBER"
+                        },
+                        {
+                            "key": "region",
+                            "displayName": "Region",
+                            "type": "TEXT"
+                        }
+                    ]
+                }   
+            }
+            
+    new_board = requests.post("https://www.wixapis.com/wix-data/v2/collections", headers=headers, data=json.dumps(post_data))
+    print(f"New Board: {new_board}")
+    return requests.post("https://www.wixapis.com/wix-data/v2/items/query", headers=headers, data=json.dumps(post_data))
+
+def delete_data_items(headers, data_item_ids, board_id, current_data, post_data):
+    data_item_ids = []
+    for item in current_data.json()['dataItems']:
+        data_item_ids.append(item['id'])
+                
+    while len(data_item_ids) > 0:
+        delete_data = {
+            "dataCollectionId": board_id,
+            "dataItemIds": data_item_ids
+        }
+        del_req = requests.post("https://www.wixapis.com/wix-data/v2/bulk/items/remove", headers=headers, data=json.dumps(delete_data))
+        print(f"Delete Request: {del_req}")
+        current_data = requests.post("https://www.wixapis.com/wix-data/v2/items/query", headers=headers, data=json.dumps(post_data))
+        data_item_ids = []
+        for item in current_data.json()['dataItems']:
+            data_item_ids.append(item['id'])
+
+def create_data_items(data, headers, board_id):
+    data_items = []   
+    for row in data:
+        for r in row:    
+            data_items.append({                    
+                "data": {                    
+                "rank": int(r[0]),
+                "username": str(r[1]),
+                "total_points": int(r[2]),
+                "win_percentage": float(r[3]),
+                "region": str(r[4])
+                    }
+            })            
+    post_data = {
+        "dataCollectionId": board_id,
+        "data_items": data_items,
+    }
+        
+    print(f"Data Items: {data_items} Length: {len(data_items)}")
+        
+    requests.post("https://www.wixapis.com/wix-data/v2/bulk/items/insert", headers=headers, data=json.dumps(post_data, cls=misc.DecimalEncoder))

@@ -33,7 +33,7 @@ class tournamentData:
     
     def add_win(self, tournament_id, player_db_id):
         self.cursor.execute(
-            "UPDATE tblTournamentData SET wins=wins+1 WHERE tournament_id=%s AND player_db_id=%s",
+            "UPDATE tblTournamentData SET wins=wins+1, score=score+1 WHERE tournament_id=%s AND player_db_id=%s",
             (tournament_id, player_db_id)
         )
         self.db.commit()
@@ -59,7 +59,7 @@ class tournamentData:
     
     def remove_win(self, tournament_id, player_db_id):
         self.cursor.execute(
-            "UPDATE tblTournamentData SET wins=wins-1 WHERE tournament_id=%s AND player_db_id=%s",
+            "UPDATE tblTournamentData SET wins=wins-1, score=score-1 WHERE tournament_id=%s AND player_db_id=%s",
             (tournament_id, player_db_id)
         )
         self.db.commit()
@@ -83,52 +83,12 @@ class tournamentData:
         )
         return self.cursor.fetchone()
     
-    def add_placement(self, tournament_id, player_db_id, placement):
-        placement_column = ""
-        if placement == 1:
-            placement_column = "first_place"
-        elif placement == 2:
-            placement_column = "second_place"
-        elif placement == 3:
-            placement_column = "third_place"
-        elif placement == 4:
-            placement_column = "fourth_place"
-        elif placement == 5:
-            placement_column = "fifth_place"
-        elif placement == 6:
-            placement_column = "sixth_place"
-        elif placement == 7:
-            placement_column = "seventh_place"
-        elif placement == 8:
-            placement_column = "eighth_place"
-        elif placement == 9:
-            placement_column = "ninth_place"
-        elif placement == 10:
-            placement_column = "tenth_place"
-        elif placement == 11:
-            placement_column = "eleventh_place"
-        elif placement == 12:
-            placement_column = "twelfth_place"
-        elif placement == 13:
-            placement_column = "thirteenth_place"
-        elif placement == 14:
-            placement_column = "fourteenth_place"
-        elif placement == 15:
-            placement_column = "fifteenth_place"
-        elif placement == 16:
-            placement_column = "sixteenth_place"
+    def add_placement(self, tournament_id, player_db_id, placement):        
         
-        
-        if placement_column == "":
-               self.cursor.execute(
-            f"UPDATE tblTournamentData SET`rank`=%s WHERE tournament_id=%s AND player_db_id=%s",
-            (placement, tournament_id, player_db_id)
+        self.cursor.execute(
+        f"UPDATE tblTournamentData SET`rank`=%s WHERE tournament_id=%s AND player_db_id=%s",
+        (placement, tournament_id, player_db_id)
         )
-        else:                        
-            self.cursor.execute(
-                f"UPDATE tblTournamentData SET {placement_column}={placement_column}+1, `rank`=%s WHERE tournament_id=%s AND player_db_id=%s",
-                (placement, tournament_id, player_db_id)
-            )
             
         self.db.commit()
         
@@ -137,6 +97,58 @@ class tournamentData:
             (tournament_id, player_db_id)
         )
         return self.cursor.fetchone()
+    
+    def update_score_for_top_cut(self, tournament_id, player_db_id):
+        # Get the attendance_id from tblTournaments where the tournament_id is the one we're looking for
+        # and get the top_cut from tblTournamentAttendance where the attendance_id is the one we just got
+        self.cursor.execute(
+        "SELECT attendance_id FROM tblTournaments WHERE id=%s",
+        (tournament_id,)
+        )
+        attendance_id = self.cursor.fetchone()[0]
+        
+        self.cursor.execute(
+            "SELECT top_cut FROM tblTournamentAttendance WHERE id=%s",
+            (attendance_id,)
+        )
+        
+        top_cut = self.cursor.fetchone()[0]
+        
+        # Figure out score modifiers based on top_cut. Example for top 16:
+        # 1st to 16th 10/9/8/7/6/5/4/3
+        #             1/1/1/1/1/1/1/1/1
+        # For Top 8: 1st to 8th 5/4/3/2/1/1/1/1
+        # For Top 4: 1st to 4th 5/4/3/2
+        # For Top 2: 1st to 2nd 5/4
+        # For Top 1: 1st 5
+        
+        score_modifiers = []
+        if top_cut == 16:
+            score_modifiers = [10, 9, 8, 7, 6, 5, 4, 3]
+        elif top_cut == 8:
+            score_modifiers = [5, 4, 3, 2, 1, 1, 1, 1]
+        elif top_cut == 4:
+            score_modifiers = [5, 4, 3, 2]
+        elif top_cut == 2:
+            score_modifiers = [5, 4]
+        elif top_cut == 1:
+            score_modifiers = [5]
+        else:
+            print(f"Unknown top cut: {top_cut}")
+            return
+        
+        
+        self.cursor.execute(
+            "SELECT `rank` FROM tblTournamentData WHERE tournament_id=%s AND player_db_id=%s",
+            (tournament_id, player_db_id)
+        )
+        placement = self.cursor.fetchone()[0]
+        
+        self.cursor.execute(
+            "UPDATE tblTournamentData SET score=score*%s WHERE tournament_id=%s AND player_db_id=%s",
+            (score_modifiers[placement - 1], tournament_id, player_db_id)
+        )
+        self.db.commit()
     
     def update_win_percentage(self, tournament_id, player_db_id):
         self.cursor.execute(

@@ -9,3 +9,17 @@ class region:
             (region_id,)
         )
         return self.cursor.fetchone()
+    
+    def get_region_id_by_name(self, name):
+        self.cursor.execute(
+            "SELECT id FROM tblRegions WHERE region=%s",
+            (name,)
+        )
+        return self.cursor.fetchone()
+    
+    def get_region_id_by_short_name(self, short_name):
+        self.cursor.execute(
+            "SELECT id FROM tblRegions WHERE short=%s",
+            (short_name,)
+        )
+        return self.cursor.fetchone()

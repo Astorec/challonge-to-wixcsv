@@ -1,7 +1,5 @@
 import os
-import smtplib
 import csv
-import requests
 import api.challonge.calls as calls
 import time
 import json
@@ -16,19 +14,13 @@ import utils.db_operations.leaderboard as leaderboard
 import utils.db_operations.region as region
 import utils.misc as misc
 import utils.wix_calls.wix_api as wix_api
-import utils.email_calls.send as email_send
-import utils.email_calls.response as email_response
 import utils.leaderboard.top_cut as set_top_cut
 
 from classes.player import player
 from classes.participant import participant
 from urllib.parse import urlparse
 from datetime import datetime, timedelta
-from decimal import Decimal
-from imap_tools import MailBox, A
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from flask import Flask, request, jsonify
+from flask import Flask
 
 class main:
     def __init__(self):
@@ -187,8 +179,7 @@ class main:
                 if match_db is None:
                     print(f"Error: Failed to undo match winner for match ID {m['id']}.")
                 continue
-
-                
+       
     def check_periodically(self, username, api_key, url, interval=30):
         tournament_id = url
         calls_instance = calls.calls(username, api_key)
@@ -210,117 +201,116 @@ class main:
                 current_tournament_json = t
                 break
                 
-        if self.modif_tournament.get_finalized_status(tournament_id) == 1:
-            print("Tournament already finalized. Exiting.")
-            return     
+        if self.modif_tournament.get_finalized_status(tournament_id) != 1:
         
-        while True:
-            try:
-                print("Checking...")
-                tournament_data = calls_instance.get_tournament(tournament_id)
-                    
-                print("Tournament State: " + tournament_data['state'])
-                                    
-                if current_tournament_json is None:
-                   # try and get data from json
-                    with open('config/tournament_data.json') as f:
-                        tournament_json = json.load(f)
-                    # find tournament url in json
-                    if url not in tournament_json:
-                        current_tournament_json = {
-                            "name": tournament_data['name'],
-                            "participant_count": tournament_data['participants_count'],
-                            "is_two_stage": False
-                        }
+            while True:
+                try:
+                    print("Checking...")
+                    tournament_data = calls_instance.get_tournament(tournament_id)
                         
-                        tournament_json[url] = current_tournament_json
-                        with open('config/tournament_data.json', 'w') as f:
-                            json.dump(tournament_json, f)
-                    else:
-                        current_tournament_json = tournament_json[url]
-                        
-                    
-                if previous_data is not None:    
-                        
-                    if tournament_data['state'] == 'complete':
-                        print("Tournament completed. Doing final checks.")
-                        last_check = True
-                    if tournament_data['state'] == 'group_stages_underway':
-                        self.is_two_stage = True                       
-                        current_tournament_json['is_two_stage'] = True
-                        with open('config/tournament_data.json', 'w') as f:
-                            json.dump(tournament_json, f)
-                        
-                    if tournament_data != previous_data:
-                        print("Data changed!")
+                    print("Tournament State: " + tournament_data['state'])
+                                        
+                    if current_tournament_json is None:
+                    # try and get data from json
+                        with open('config/tournament_data.json') as f:
+                            tournament_json = json.load(f)
+                        # find tournament url in json
+                        if url not in tournament_json:
+                            current_tournament_json = {
+                                "name": tournament_data['name'],
+                                "participant_count": tournament_data['participants_count'],
+                                "is_two_stage": False
+                            }
                             
+                            tournament_json[url] = current_tournament_json
+                            with open('config/tournament_data.json', 'w') as f:
+                                json.dump(tournament_json, f)
+                        else:
+                            current_tournament_json = tournament_json[url]
+                            
+                        
+                    if previous_data is not None:    
+                            
+                        if tournament_data['state'] == 'complete':
+                            print("Tournament completed. Doing final checks.")
+                            last_check = True
+                        if tournament_data['state'] == 'group_stages_underway':
+                            self.is_two_stage = True                       
+                            current_tournament_json['is_two_stage'] = True
+                            with open('config/tournament_data.json', 'w') as f:
+                                json.dump(tournament_json, f)
+                            
+                        if tournament_data != previous_data:
+                            print("Data changed!")
+                                
+                            participant_count = tournament_data['participants_count']
+                                
+                            # compare participant count
+                            if participant_count != tournament_db[3] and tournament_data['state'] == 'pending' or tournament_data['state'] == 'upcoming' or last_check:
+                                tournament_db = self.update_participant_count(tournament_db, participant_count)
+                                self.update_attendance_id(tournament_db)
+                                self.check_participant_data
+                                print("Participant count changed.")
+                                print(f"New participant count: {tournament_db[3]}")
+                                    
+                        else:
+                            print("No changes in Tournament Data detected.")
+                            
+                        if tournament_data['state'] == 'underway' or tournament_data['state'] == 'group_stages_underway' or last_check:
+                            # Check match data
+                            self.check_match_data(url, calls_instance)
+                                
+                            
+                        # Get the players in the final stage check if the list is empty. If it's empty populate it
+                        if last_check or current_tournament_json['is_two_stage'] == True and tournament_data['state'] == 'underway' and self.stage_two_participants.__len__() == 0:
+                    
+                            self.stage_two_participants = set_top_cut.get_finals_players(url, calls_instance, self.stage_two_participants, self.modif_tournament, self.modif_participants, self.modif_matches, self.modif_tournament_data)
+                            
+                                    
+                    else:
+                        is_new = True
+                        print("Initial data fetched.")            
                         participant_count = tournament_data['participants_count']
+                        # Check if tournament exists
+                        if self.modif_tournament.get_tournament_by_url(url) is not None:
+                            is_new = False
+                            
+                        tournament_db = self.modif_tournament.create_tournament(tournament_data['name'], url, participant_count, self.region.get_region_id_by_name(self.config['tournament_data']['region'])[0])
                             
                         # compare participant count
-                        if participant_count != tournament_db[3] and tournament_data['state'] == 'pending' or tournament_data['state'] == 'upcoming' or last_check:
-                            tournament_db = self.update_participant_count(tournament_db, participant_count)
+                        if participant_count != tournament_db[3] or is_new:
+                            tournament_db = self.update_participant_count(tournament_db, participant_count)                    
                             self.update_attendance_id(tournament_db)
-                            self.check_participant_data
+                            self.check_participant_data(tournament_id, calls_instance)
                             print("Participant count changed.")
                             print(f"New participant count: {tournament_db[3]}")
+                            
+                            
+                        
+                        if tournament_data['state'] == 'underway' or tournament_data['state'] == 'group_stages_underway' or is_new:
+                            # Check match data
+                            self.check_match_data(url, calls_instance)
                                 
-                    else:
-                        print("No changes in Tournament Data detected.")
-                        
-                    if tournament_data['state'] == 'underway' or tournament_data['state'] == 'group_stages_underway' or last_check:
-                        # Check match data
-                        self.check_match_data(url, calls_instance)
-                            
-                        
-                    # Get the players in the final stage check if the list is empty. If it's empty populate it
-                    if last_check or current_tournament_json['is_two_stage'] == True and tournament_data['state'] == 'underway' and self.stage_two_participants.__len__() == 0:
-                 
-                        self.stage_two_participants = set_top_cut.get_finals_players(url, calls_instance, self.stage_two_participants, self.modif_tournament, self.modif_participants, self.modif_matches, self.modif_tournament_data)
-                        
+                    if last_check:
+                        break   
                                 
-                else:
-                    is_new = True
-                    print("Initial data fetched.")            
-                    participant_count = tournament_data['participants_count']
-                    # Check if tournament exists
-                    if self.modif_tournament.get_tournament_by_url(url) is not None:
-                        is_new = False
+                    previous_data = tournament_data
                         
-                    tournament_db = self.modif_tournament.create_tournament(tournament_data['name'], url, participant_count)
-                        
-                    # compare participant count
-                    if participant_count != tournament_db[3] or is_new:
-                        tournament_db = self.update_participant_count(tournament_db, participant_count)                    
-                        self.update_attendance_id(tournament_db)
-                        self.check_participant_data(tournament_id, calls_instance)
-                        print("Participant count changed.")
-                        print(f"New participant count: {tournament_db[3]}")
-                        
-                        
+                    print(f"Next check in {interval} seconds. This Check will be at {datetime.now() + timedelta(seconds=interval)}")
+                except Exception as e:
+                    print(e)
                     
-                    if tournament_data['state'] == 'underway' or tournament_data['state'] == 'group_stages_underway' or is_new:
-                        # Check match data
-                        self.check_match_data(url, calls_instance)
-                            
-                if last_check:
-                    break   
-                            
-                previous_data = tournament_data
-                    
-                print(f"Next check in {interval} seconds. This Check will be at {datetime.now() + timedelta(seconds=interval)}")
-            except Exception as e:
-                print(e)
-                
-            time.sleep(interval)
-        
-        if tournament_data['state'] == 'complete':            
+                time.sleep(interval)
+    
+        tournament_id = self.modif_tournament.get_tournament_by_url(url)[0]
             
-            tournament_id = self.modif_tournament.get_tournament_by_url(url)[0]
-            top_cut = json.dumps(set_top_cut.calculate_top_cut(tournament_id, tournament_db[6], self.stage_two_participants, self.get_top_cut, calls_instance, self.modif_matches, self.modif_players, self.modif_participants, self.modif_tournament, self.modif_tournament_data), indent=4)
-
-            results = self.generate_leaderboard_csv(tournament_id, tournament_db[5], "main_leaderboard.csv")
-            wix_api.call(self.config, self.config['wix_api']['key'], self.config['wix_api']['site_id'], self.config['wix_api']['account_id'], results, tournament_db[1], tournament_db[5],self.region, tournament_db[4])
-        
+        # Set the top cut
+        set_top_cut.calculate_top_cut(tournament_id, tournament_db[6], self.stage_two_participants, self.get_top_cut, calls_instance, self.modif_matches, self.modif_players, self.modif_participants, self.modif_tournament, self.modif_tournament_data)
+            
+        results = self.generate_leaderboard_csv(tournament_id, tournament_db[5], "main_leaderboard.csv")
+            
+        wix_api.call(self.config, self.config['wix_api']['key'], self.config['wix_api']['site_id'], self.config['wix_api']['account_id'], results, tournament_db[1], self.region.get_region_by_id(tournament_db[5]), tournament_db[4])
+            
     def generate_leaderboard_csv(self, tournament_id, region, filename):
         results = []
         
@@ -328,7 +318,7 @@ class main:
     
         # Define the CSV headers
         headers = [
-            "Rank", "Username", "Total Points"
+            "Rank", "Username", "Total Points" "Win Percentage", "Region"
         ]
         
         # If file exists, delete it
@@ -342,7 +332,12 @@ class main:
         with open(filename, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(headers)
-            csvwriter.writerows(results[0])
+            for data in results[0]:
+                for row in data:
+                    print(f"Row: {row}")
+                    csvwriter.writerow(list(row))
+                
+            print(f"csvwriter: {csvwriter}")
         print(f"Main Leaderboard CSV file '{filename}' generated successfully.")
         
         
@@ -359,8 +354,11 @@ class main:
         # Write the results to a CSV file
         with open(filename, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
-            csvwriter.writerow(headers)
-            csvwriter.writerows(results[1])
+            csvwriter.writerow(headers)            
+            for data in results[1]:
+                for row in data:
+                    print(f"Row: {row}")
+                    csvwriter.writerow(list(row))
 
         
         results.append([self.leaderboard.get_region_leaderboard(region)])
@@ -376,8 +374,11 @@ class main:
         # Write the results to a CSV file
         with open(filename, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
-            csvwriter.writerow(headers)
-            csvwriter.writerows(results[2])
+            csvwriter.writerow(headers)            
+            for data in results[2]:
+                for row in data:
+                    print(f"Row: {row}")
+                    csvwriter.writerow(list(row))
         
         
         print(f"Tournament Leaderboard CSV file '{filename}' generated successfully.")

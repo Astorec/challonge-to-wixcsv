@@ -6,7 +6,7 @@ class tournament:
         self.cursor = db.cursor()
     
     # Create new tournament if it doesn't exist
-    def create_tournament(self, tournament_name, url, participants, is_side_event=False, state='upcoming'):
+    def create_tournament(self, tournament_name, url, participants, region, is_side_event=False, state='upcoming'):
     # Check if tournament already exists
         self.cursor.execute(
             "SELECT * FROM tblTournaments WHERE name=%s AND url=%s",
@@ -18,8 +18,8 @@ class tournament:
             return result
         
         self.cursor.execute(
-            "INSERT INTO tblTournaments (name, url, participants, is_side_event, state) VALUES (%s, %s, %s, %s, %s)",
-            (tournament_name, url, participants, is_side_event, state)
+            "INSERT INTO tblTournaments (name, url, participants, is_side_event, region, state) VALUES (%s, %s, %s, %s, %s, %s)",
+            (tournament_name, url, participants, is_side_event, region, state)
         )
         self.db.commit()
         

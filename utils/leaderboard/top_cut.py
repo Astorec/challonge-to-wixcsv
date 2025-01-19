@@ -4,100 +4,97 @@ import os
 
 def calculate_top_cut(tournament_id, attendance_id, stage_two_participants, get_top_cut, calls_instance, modif_matches, modif_players, modif_participants, modif_tournament, modif_tournament_data):
         
-        rank_labels = None
-        if attendance_id == 1:
-            rank_labels = ["first"]
-        elif attendance_id == 2:
-            rank_labels = ["first", "second"]
-        elif attendance_id == 3:
-            rank_labels = ["first", "second", "third", "fourth"]
-        elif attendance_id == 4:
-            rank_labels = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"]
-        elif attendance_id == 5:
-            rank_labels = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth"]
+        fresh_top_cut = True
+        tournament_data = modif_tournament_data.get_tournament_data(tournament_id)
         
-        top_cut = None      
+        # Sort tournament data by rank descending
+        tournament_data.sort(key=lambda x: x[5], reverse=True)
         
-        url = modif_tournament.get_tournament_by_id(tournament_id)[2]
-        matches = calls_instance.get_matches(url)
-        participants = modif_participants.get_participants_by_tournament_id(tournament_id)
-        finals_matches = []
-        # Remove all matches that are not in the top cut
-        for m in matches:
-            if m['group_id'] is None:
-                finals_matches.append(m)
-  
-        max_rounds = 0
-        
-        for m in finals_matches:
-            if m['round'] > max_rounds:
-                max_rounds = m['round']
-
-        placement = 0
-        if max_rounds == 5:
-            placement = 16
-        elif max_rounds == 3:
-            placement = 8
-        elif max_rounds == 2:
-            if participants.__len__() <= 8:
-                placement = 1
-            elif participants.__len__() <= 16:
-                placement = 2
-            else:
-                placement = 4
-        
-        for m in finals_matches:
-            if m['round'] == 0:
-                # get player_id from winner_id
-                winner_id = modif_participants.get_participant_by_player_id_tournament_id( m['winner_id'],tournament_id)[0][1]
-                loser_id = modif_participants.get_participant_by_player_id_tournament_id(m['loser_id'],tournament_id)[0][1]
-                modif_tournament_data.add_placement(tournament_id, winner_id, 3)
-                modif_tournament_data.add_placement(tournament_id, loser_id, 4)
+        # Check to see if column 5 is not 0
+        for i, row in enumerate(tournament_data):
+            if row[5] != 0:
+                fresh_top_cut = False
                 break
         
-        
-        # Sort finals matches by round
-        finals_matches.sort(key=lambda x: x['round'])
-        placement_copy = placement
-        # Loop max_rounds times
-        for i in range(max_rounds):
-            # Get all matches with the current round
-            current_round_matches = [m for m in finals_matches if m['round'] == i + 1]
-            # Get the players from the matches
+        # This is to stop the app from calculating the top cut again if it has already been calculated.
+        # Useful for when we are importing a tournament that wasn't already in the database.
+        if fresh_top_cut:
+            url = modif_tournament.get_tournament_by_id(tournament_id)[2]
+            matches = calls_instance.get_matches(url)
+            participants = modif_participants.get_participants_by_tournament_id(tournament_id)
+            finals_matches = []
             
-            for m in current_round_matches:
-                winner_id = modif_participants.get_participant_by_player_id_tournament_id(m['winner_id'], tournament_id)[0][1]         
-                loser_id = modif_participants.get_participant_by_player_id_tournament_id(m['loser_id'], tournament_id)[0][1]
-                                      
-                
-                # Check if we are in semi or finals
-                if i + 1 == max_rounds:                    
-                    modif_tournament_data.add_placement(tournament_id, winner_id, 1)
-                    modif_tournament_data.add_placement(tournament_id, loser_id, 2)
-                elif i + 1 == max_rounds - 1:
-                    continue
-                else:
-                    modif_tournament_data.add_placement(tournament_id, loser_id, placement_copy)
-                    placement_copy -= 1
+            # Remove all matches that are not in the top cut
+            for m in matches:
+                if m['group_id'] is None:
+                    finals_matches.append(m)
+    
+            max_rounds = 0
+            
+            for m in finals_matches:
+                if m['round'] > max_rounds:
+                    max_rounds = m['round']
 
-        
-        for p in participants:            
-            modif_tournament_data.update_win_percentage(tournament_id, p[1])
+            placement = 0
+            if max_rounds == 5:
+                placement = 16
+            elif max_rounds == 3:
+                placement = 8
+            elif max_rounds == 2:
+                if participants.__len__() <= 8:
+                    placement = 1
+                elif participants.__len__() <= 16:
+                    placement = 2
+                else:
+                    placement = 4
+            
+            for m in finals_matches:
+                if m['round'] == 0:
+                    # get player_id from winner_id
+                    winner_id = modif_participants.get_participant_by_player_id_tournament_id( m['winner_id'],tournament_id)[0][1]
+                    loser_id = modif_participants.get_participant_by_player_id_tournament_id(m['loser_id'],tournament_id)[0][1]
+                    modif_tournament_data.add_placement(tournament_id, winner_id, 3)
+                    modif_tournament_data.update_score_for_top_cut(tournament_id, winner_id)
+                    modif_tournament_data.add_placement(tournament_id, loser_id, 4)                    
+                    modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id)
+                    break
+            
+            
+            # Sort finals matches by round
+            finals_matches.sort(key=lambda x: x['round'])
+            placement_copy = placement
+            # Loop max_rounds times
+            for i in range(max_rounds):
+                # Get all matches with the current round
+                current_round_matches = [m for m in finals_matches if m['round'] == i + 1]
+                # Get the players from the matches
                 
-        
-        top_cut = modif_tournament_data.get_top_cut(tournament_id, placement)
-        top_cut_dict = OrderedDict()
-        for i, row in enumerate(top_cut):
-            # get player from db
-            player = modif_players.get_player_by_id(row[2])
-            top_cut_dict[rank_labels[i -1]] = {
-                "name": player[1],
-                "username": player[2]
-            }
-        
-        calculate_rest_of_rankings(tournament_id, modif_tournament_data, placement)
-        modif_tournament.set_finalized(tournament_id)
-        return top_cut_dict
+                for m in current_round_matches:
+                    winner_id = modif_participants.get_participant_by_player_id_tournament_id(m['winner_id'], tournament_id)[0][1]         
+                    loser_id = modif_participants.get_participant_by_player_id_tournament_id(m['loser_id'], tournament_id)[0][1]
+                                        
+                    
+                    # Check if we are in finals
+                    if i + 1 == max_rounds:                    
+                        modif_tournament_data.add_placement(tournament_id, winner_id, 1)                        
+                        modif_tournament_data.update_score_for_top_cut(tournament_id, winner_id)
+                        modif_tournament_data.add_placement(tournament_id, loser_id, 2)
+                        modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id)
+                    elif i + 1 == max_rounds - 1:
+                        continue
+                    else:
+                        modif_tournament_data.add_placement(tournament_id, loser_id, placement_copy)
+                        modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id)
+                        placement_copy -= 1
+
+            
+
+            calculate_rest_of_rankings(tournament_id, modif_tournament_data, placement)            
+            for p in participants:            
+                modif_tournament_data.update_win_percentage(tournament_id, p[1])
+                
+                
+            modif_tournament.set_finalized(tournament_id)
     
 def calculate_rest_of_rankings(tournament_id, modif_tournament_data, placement):
     all_players = modif_tournament_data.get_all_players_with_scores(tournament_id)
@@ -111,7 +108,7 @@ def calculate_rest_of_rankings(tournament_id, modif_tournament_data, placement):
                 modif_tournament_data.add_placement(tournament_id, player[2], placement)                
         else:
             continue
- 
+    
  
 def check_player_exists(player_id, participants):
     for participant in participants:
