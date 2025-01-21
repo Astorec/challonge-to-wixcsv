@@ -184,6 +184,7 @@ class main:
         tournament_id = url
         calls_instance = calls.calls(username, api_key)
         previous_data = None
+        previous_data_participants = None
         last_check = False
         tournament_json = None
         current_tournament_json = None
@@ -230,7 +231,21 @@ class main:
                             
                         
                     if previous_data is not None:    
+                        participants = calls_instance.get_participants(tournament_id)
+                        if participants != previous_data_participants and tournament_data['state'] == 'pending' or tournament_data['state'] == 'upcoming' or last_check:
                             
+                            print("Participants changed.")                                                          
+                            # compare participant counts
+                            participant_count = tournament_data['participants_count']
+                            tournament_db = self.update_participant_count(tournament_db, participant_count)
+                            self.update_attendance_id(tournament_db)
+                            self.check_participant_data(tournament_id, calls_instance)
+                            print("Participant count changed.")
+                            print(f"New participant count: {tournament_db[3]}")
+                            
+                            # Set previous participants to current participants
+                            previous_data_participants = participants
+                                
                         if tournament_data['state'] == 'complete':
                             print("Tournament completed. Doing final checks.")
                             last_check = True
@@ -240,18 +255,6 @@ class main:
                             with open('config/tournament_data.json', 'w') as f:
                                 json.dump(tournament_json, f)
                             
-                        if tournament_data != previous_data:
-                            print("Data changed!")
-                                
-                            participant_count = tournament_data['participants_count']
-                                
-                            # compare participant count
-                            if participant_count != tournament_db[3] and tournament_data['state'] == 'pending' or tournament_data['state'] == 'upcoming' or last_check:
-                                tournament_db = self.update_participant_count(tournament_db, participant_count)
-                                self.update_attendance_id(tournament_db)
-                                self.check_participant_data
-                                print("Participant count changed.")
-                                print(f"New participant count: {tournament_db[3]}")
                                     
                         else:
                             print("No changes in Tournament Data detected.")
