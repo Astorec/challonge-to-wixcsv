@@ -8,6 +8,7 @@ class tournament:
     # Create new tournament if it doesn't exist
     def create_tournament(self, tournament_name, url, participants, region, is_side_event=False, state='upcoming'):
     # Check if tournament already exists
+        self.cursor.fetchall()
         self.cursor.execute(
             "SELECT * FROM tblTournaments WHERE name=%s AND url=%s",
             (tournament_name, url)
