@@ -5,6 +5,7 @@ import os
 def calculate_top_cut(tournament_id, attendance_id, stage_two_participants, get_top_cut, calls_instance, modif_matches, modif_players, modif_participants, modif_tournament, modif_tournament_data):
         
         fresh_top_cut = True
+        third_place_match = False
         tournament_data = modif_tournament_data.get_tournament_data(tournament_id)
         
         # Sort tournament data by rank descending
@@ -58,7 +59,6 @@ def calculate_top_cut(tournament_id, attendance_id, stage_two_participants, get_
                     modif_tournament_data.add_placement(tournament_id, loser_id, 4)                    
                     modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id)
                     break
-            
             
             # Sort finals matches by round
             finals_matches.sort(key=lambda x: x['round'])
@@ -188,7 +188,6 @@ def get_finals(tournament_id, modif_matches, modif_participants, modif_tournamen
                 match = None
                 if m['player1_id'] == p[3] or m['player2_id'] == p[3]:
                     match = modif_matches.add_match(m['id'], m['player1_id'], m['player2_id'], tournament_id)
-                    match = modif_matches.set_match_to_final(m['id'])
                 if m['winner_id'] is not None and m['loser_id'] is not None and match is not None:
                     modif_matches.update_match_winner(match[0], m['winner_id'], m['loser_id'])
     

@@ -9,7 +9,6 @@ class initDB:
         self.connection = None
         self.cursor = None
         self.connect()
-        self.init_db()
 
     def connect(self):
         self.connection = mysql.connector.connect(
@@ -18,12 +17,18 @@ class initDB:
             password=self.config['db']['pass']
         )
         self.cursor = self.connection.cursor()
-        # Create database if it doesn't exist
-        self.cursor.execute(f"CREATE DATABASE IF NOT EXISTS {self.config['db']['db']}")
-        # Use the database
-        self.cursor.execute(f"USE {self.config['db']['db']}")
-        
-        print("DB_HOST", self.config['db']['host'])
+        # check if database exists
+        self.cursor.execute("SHOW DATABASES")
+        databases = self.cursor.fetchall()
+
+        if (self.config['db']['db'],) in databases:
+            self.cursor.execute(f"USE {self.config['db']['db']}")
+            print(f"Using database {self.config['db']['db']}")
+        else:
+            self.cursor.execute(f"CREATE DATABASE {self.config['db']['db']}")
+            self.cursor.execute(f"USE {self.config['db']['db']}")
+            self.init_db()
+            print(f"Database {self.config['db']['db']} created successfully")
 
     def init_db(self):
         tables = {
@@ -109,6 +114,7 @@ class initDB:
         for table_name, create_table_query in tables.items():
             try:
                 self.cursor.execute(create_table_query)
+                is_new = True
                 print(f"{table_name} table created successfully")
             except mysql.connector.Error as err:
                 if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
@@ -117,53 +123,54 @@ class initDB:
                     print(f"Error creating table {table_name}: {err.msg}")
 
          # Insert initial data into tblRegions
-        regions = [
-            ('Scotland', 'SCOT'),
-            ('North East', 'NE'),
-            ('North West', 'NW'),
-            ('Yorkshire & The Humber', 'YH'),
-            ('East Midlands', 'EM'),
-            ('West Midlands', 'WM'),
-            ('East of England', 'EE'),
-            ('London', 'LOND'),
-            ('South East', 'SE'),
-            ('South West', 'SW'),
-            ('Wales', 'WAL'),
-            ('Northern Ireland', 'NI'),
-            ('Unassigned', 'IRE')
-        ]
 
-        try:
-            for region, short in regions:
-                self.cursor.execute(
-                    "INSERT INTO tblRegions (region, short) VALUES (%s, %s)",
-                    (region, short)
-                )
-            self.connection.commit()
-            print("Initial data inserted into tblRegions successfully")
-        except mysql.connector.Error as err:
-            print(f"Error inserting data into tblRegions: {err}")
+            regions = [
+                ('Scotland', 'SCOT'),
+                ('North East', 'NE'),
+                ('North West', 'NW'),
+                ('Yorkshire & The Humber', 'YH'),
+                ('East Midlands', 'EM'),
+                ('West Midlands', 'WM'),
+                ('East of England', 'EE'),
+                ('London', 'LOND'),
+                ('South East', 'SE'),
+                ('South West', 'SW'),
+                ('Wales', 'WAL'),
+                ('Northern Ireland', 'NI'),
+                ('Unassigned', 'UNASSIGNED')
+            ]
+
+            try:
+                for region, short in regions:
+                    self.cursor.execute(
+                        "INSERT INTO tblRegions (region, short) VALUES (%s, %s)",
+                        (region, short)
+                    )
+                self.connection.commit()
+                print("Initial data inserted into tblRegions successfully")
+            except mysql.connector.Error as err:
+                print(f"Error inserting data into tblRegions: {err}")
+                
+            # Insert initial data into tblTournamentAttendance
+            attendance = [
+                (1, 4, 8),
+                (2, 9, 16),
+                (4, 17, 32),
+                (8, 33, 64),
+                (16, 65, 128),
+                (0, 0, 0)
+            ]
             
-        # Insert initial data into tblTournamentAttendance
-        attendance = [
-            (1, 4, 8),
-            (2, 9, 16),
-            (4, 17, 32),
-            (8, 33, 64),
-            (16, 65, 128),
-            (0, 0, 0)
-        ]
-        
-        try:
-            for top_cut, min, max in attendance:
-                self.cursor.execute(
-                    "INSERT INTO tblTournamentAttendance (top_cut, min, max) VALUES (%s, %s, %s)",
-                    (top_cut, min, max)
-                )
-            self.connection.commit()
-            print("Initial data inserted into tblTournamentAttendance successfully")
-        except mysql.connector.Error as err:
-            print(f"Error inserting data into tblTournamentAttendance: {err}")
+            try:
+                for top_cut, min, max in attendance:
+                    self.cursor.execute(
+                        "INSERT INTO tblTournamentAttendance (top_cut, min, max) VALUES (%s, %s, %s)",
+                        (top_cut, min, max)
+                    )
+                self.connection.commit()
+                print("Initial data inserted into tblTournamentAttendance successfully")
+            except mysql.connector.Error as err:
+                print(f"Error inserting data into tblTournamentAttendance: {err}")
         
     def get_connection(self):
         return self.connection

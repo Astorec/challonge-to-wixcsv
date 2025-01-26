@@ -35,7 +35,7 @@ class matches:
     
     def set_match_to_final(self, match_id):
         self.cursor.execute(
-            "UPDATE tblMatches SET is_finals=True WHERE match_id=%s",
+            "UPDATE tblMatches SET is_finals=1 WHERE match_id=%s",
             (match_id,)
         )
         self.db.commit()

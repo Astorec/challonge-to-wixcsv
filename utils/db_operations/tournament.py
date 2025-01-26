@@ -68,8 +68,6 @@ class tournament:
         return self.cursor.fetchone()
     
     def get_tournament_by_url(self, url):
-        # Clear out any previous queries
-        self.cursor.fetchall()
         
         self.cursor.execute(
             "SELECT * FROM tblTournaments WHERE url=%s",

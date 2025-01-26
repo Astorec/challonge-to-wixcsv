@@ -43,8 +43,23 @@ class main:
     def update_participant_count(self, db, participant_count):
         print("Participant count changed.")
         print(f"Old participant count: {db[3]}")
-        print(f"New participant count: {participant_count}")                    
+        print(f"New participant count: {participant_count}")
+        # Update attendance ID if participant count meets the requirements
+        if participant_count <= 8 and db[3] == 0:
+            attendance_id = 1
+        elif participant_count <= 16 and db[3] <= 8:
+            attendance_id = 2
+        elif participant_count <= 32 and db[3] <= 16:
+            attendance_id = 3
+        elif participant_count <= 64 and db[3] <= 32:
+            attendance_id = 4
+        elif participant_count <= 128 and db[3] <= 64:
+            attendance_id = 5
+        else:
+            attendance_id = 6
+        self.modif_tournament.set_attendance_id(db[0], attendance_id)
         return self.modif_tournament.update_participant_count(db[0], participant_count)
+    
 
     def update_state(self, db, state):
         print("State changed.")
@@ -65,8 +80,7 @@ class main:
             elif db[3] <= 128:
                 self.modif_tournament.set_attendance_id(db[0], 5)
 
-    def check_participant_data(self,tournament_id, calls_instance):
-        participants = calls_instance.get_participants(tournament_id)
+    def check_participant_data(self,tournament_id, participants):
         
         
         for p in participants:
@@ -87,8 +101,7 @@ class main:
                 player_db = self.modif_players.create_player(_player.name, _player.username)
                 if player_db is None:
                     print(f"Failed to create player: {_player.name}, {_player.username}")
-                    continue
-                
+                    continue                
     
             t_id = self.modif_tournament.get_tournament_by_url(tournament_id)[0]
             
@@ -99,7 +112,7 @@ class main:
             else:
                 _participant = participant(player_db[0], t_id, p['id'])    
             
-            participant_db = self.modif_participants.create_participant(_participant.tournament_id, _participant.player_db_id, _participant.player_id, _participant.group_id)
+            self.modif_participants.create_participant(_participant.tournament_id, _participant.player_db_id, _participant.player_id, _participant.group_id)
 
             if self.modif_tournament_data.get_data(t_id, player_db[0]) is None:
                 self.modif_tournament_data.add_data(t_id, player_db[0])
@@ -137,9 +150,14 @@ class main:
                 print(f"Adding match with ID {m['id']}, Player 1 ID: {m['player1_id']}, Player 2 ID: {m['player2_id']}")
                 match_db = self.modif_matches.add_match(m['id'], m['player1_id'], m['player2_id'], tournament_db[0])
                 
+         
+                
                 if match_db is None:
                     print(f"Error: Failed to add match with ID {m['id']}. Player 1 ID was: {m['player1_id']}, Player 2 ID was: {m['player2_id']}. Skipping...")
                     continue
+            
+            if self.modif_participants.get_participant_by_group_id_tournament_id(m['player1_id'], tournament_db[0]) is None or self.modif_participants.get_participant_by_group_id_tournament_id(m['player2_id'], tournament_db[0]) is None:
+                self.modif_matches.set_match_to_final(match_db[7])
 
             
             if match_db[3] is None and match_db[4] is None:
@@ -192,7 +210,7 @@ class main:
         if not os.path.exists('config/tournament_data.json'):
             # Create the file
             with open('config/tournament_data.json', 'w') as f:
-                f.write('[]')
+                f.write('{}')
                     
         with open('config/tournament_data.json') as f:
             tournament_json = json.load(f)
@@ -222,10 +240,9 @@ class main:
                                 "participant_count": tournament_data['participants_count'],
                                 "is_two_stage": False
                             }
-                            
                             tournament_json[url] = current_tournament_json
                             with open('config/tournament_data.json', 'w') as f:
-                                json.dump(tournament_json, f)
+                                json.dump(tournament_json, f, indent=4)
                         else:
                             current_tournament_json = tournament_json[url]
                             
@@ -234,17 +251,23 @@ class main:
                         participants = calls_instance.get_participants(tournament_id)
                         if participants != previous_data_participants and tournament_data['state'] == 'pending' or tournament_data['state'] == 'upcoming' or last_check:
                             
-                            print("Participants changed.")                                                          
-                            # compare participant counts
-                            participant_count = tournament_data['participants_count']
-                            tournament_db = self.update_participant_count(tournament_db, participant_count)
-                            self.update_attendance_id(tournament_db)
-                            self.check_participant_data(tournament_id, calls_instance)
-                            print("Participant count changed.")
-                            print(f"New participant count: {tournament_db[3]}")
-                            
-                            # Set previous participants to current participants
-                            previous_data_participants = participants
+                            if participants.__len__() == 0:
+                                print("No participants found.")
+                                continue
+
+                            if participants.__len__() != tournament_data['participants_count']:
+
+                                print("Participants changed.")                                                          
+                                # compare participant counts
+                                participant_count = tournament_data['participants_count']
+                                tournament_db = self.update_participant_count(tournament_db, participant_count)
+                                self.update_attendance_id(tournament_db)
+                                self.check_participant_data(tournament_id, participants)
+                                print("Participant count changed.")
+                                print(f"New participant count: {tournament_db[3]}")
+                                
+                                # Set previous participants to current participants
+                                previous_data_participants = participants
                                 
                         if tournament_data['state'] == 'complete':
                             print("Tournament completed. Doing final checks.")
@@ -252,6 +275,9 @@ class main:
                         if tournament_data['state'] == 'group_stages_underway':
                             self.is_two_stage = True                       
                             current_tournament_json['is_two_stage'] = True
+
+                            # Going in again to make sure that we have the group IDs are set
+                            self.check_participant_data(tournament_id, participants)
                             with open('config/tournament_data.json', 'w') as f:
                                 json.dump(tournament_json, f)
                             
@@ -274,6 +300,7 @@ class main:
                         is_new = True
                         print("Initial data fetched.")            
                         participant_count = tournament_data['participants_count']
+                        participants = calls_instance.get_participants(tournament_id)
                         # Check if tournament exists
                         if self.modif_tournament.get_tournament_by_url(url) is not None:
                             is_new = False
@@ -284,7 +311,7 @@ class main:
                         if participant_count != tournament_db[3] or is_new:
                             tournament_db = self.update_participant_count(tournament_db, participant_count)                    
                             self.update_attendance_id(tournament_db)
-                            self.check_participant_data(tournament_id, calls_instance)
+                            self.check_participant_data(tournament_id, participants)
                             print("Participant count changed.")
                             print(f"New participant count: {tournament_db[3]}")
                             
@@ -299,11 +326,18 @@ class main:
                                 
                     previous_data = tournament_data
                         
-                    print(f"Next check in {interval} seconds. This Check will be at {datetime.now() + timedelta(seconds=interval)}")
+                    # Print how much time is left until the next check and update the secondsl left
+                    while interval > 0:
+                        # Decrese the interval every second
+                        interval -= 1
+                        # delete the previous line
+                        print("\033[A                             \033[A")
+                        print(f"Next check in {interval} seconds. This Check will be at {datetime.now() + timedelta(seconds=interval)}")
+                        time.sleep(1)
+                    interval = self.config['challonge_api']['interval']
                 except Exception as e:
                     print(e)
                     
-                time.sleep(interval)
     
         tournament_id = self.modif_tournament.get_tournament_by_url(url)[0]
             
@@ -405,7 +439,7 @@ class main:
         username = self.config['challonge_api']['username']
         api_key = self.config['challonge_api']['key']
         url = misc.extract_tournament_id(self.config['challonge_api']['tournament_url'])
-        self.check_periodically(username, api_key,  url, interval=5)
+        self.check_periodically(username, api_key,  url, interval=self.config['challonge_api']['interval'])
 
 
 # Run the main class

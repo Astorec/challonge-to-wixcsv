@@ -140,7 +140,7 @@ def create_data_items(data, headers, board_id):
                 "rank": int(r[0]),
                 "username": str(r[1]),
                 "total_points": int(r[2]),
-                "win_percentage": f"{float(r[3]) * 100}%",
+                "win_percentage": f"{r[3]:.2%}",
                 "region": str(r[4])
                     }
             })            
