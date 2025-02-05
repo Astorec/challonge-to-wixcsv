@@ -54,8 +54,18 @@ class participants:
             "SELECT * FROM tblParticipants WHERE group_id=%s AND tournament_id=%s",
             (group_id, tournament_id)
         )
-        return self.cursor.fetchone()
+
+        result = self.cursor.fetchone()
+        print(f"Get Participant by group_id results: {result}")
+        return result
     
+    def get_participant_by_id_tournament_id(self, participant_id, tournament_id):
+        self.cursor.execute(
+            "SELECT * FROM tblParticipants WHERE player_id=%s AND tournament_id=%s",
+            (participant_id, tournament_id)
+        )
+        return self.cursor.fetchone()
+
     def get_participants_by_tournament_id(self, tournament_id):
         self.cursor.execute(
             "SELECT * FROM tblParticipants WHERE tournament_id=%s",

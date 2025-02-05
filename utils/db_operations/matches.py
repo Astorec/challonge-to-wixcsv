@@ -74,6 +74,7 @@ class matches:
         return self.cursor.fetchall()
     
     def get_match_by_id(self, match_id):
+      
         self.cursor.execute(
             "SELECT * FROM tblMatches WHERE match_id=%s",
             (match_id,)

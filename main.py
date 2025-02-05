@@ -156,7 +156,7 @@ class main:
                     print(f"Error: Failed to add match with ID {m['id']}. Player 1 ID was: {m['player1_id']}, Player 2 ID was: {m['player2_id']}. Skipping...")
                     continue
             
-            if self.modif_participants.get_participant_by_group_id_tournament_id(m['player1_id'], tournament_db[0]) is None or self.modif_participants.get_participant_by_group_id_tournament_id(m['player2_id'], tournament_db[0]) is None:
+            if self.modif_participants.get_participant_by_id_tournament_id(m['player1_id'], tournament_db[0]) is not None or self.modif_participants.get_participant_by_id_tournament_id(m['player2_id'], tournament_db[0]) is not None:
                 self.modif_matches.set_match_to_final(match_db[7])
 
             
@@ -197,7 +197,7 @@ class main:
                 if match_db is None:
                     print(f"Error: Failed to undo match winner for match ID {m['id']}.")
                 continue
-       
+
     def check_periodically(self, username, api_key, url, interval=30):
         tournament_id = url
         calls_instance = calls.calls(username, api_key)
@@ -228,7 +228,9 @@ class main:
                     tournament_data = calls_instance.get_tournament(tournament_id)
                         
                     print("Tournament State: " + tournament_data['state'])
-                                        
+                    if tournament_data['state'] == 'complete' or tournament_data['state'] == 'awaiting_review':      
+                        last_check = True
+                        print("Last check.")             
                     if current_tournament_json is None:
                     # try and get data from json
                         with open('config/tournament_data.json') as f:
@@ -339,14 +341,15 @@ class main:
                     print(e)
                     
     
-        tournament_id = self.modif_tournament.get_tournament_by_url(url)[0]
+        tournament = self.modif_tournament.get_tournament_by_url(url)
+        
+        if tournament[7] == 0:
+            # Set the top cut
+            set_top_cut.calculate_top_cut(tournament[0], tournament[6], self.stage_two_participants, self.get_top_cut, calls_instance, self.modif_matches, self.modif_players, self.modif_participants, self.modif_tournament, self.modif_tournament_data)
             
-        # Set the top cut
-        set_top_cut.calculate_top_cut(tournament_id, tournament_db[6], self.stage_two_participants, self.get_top_cut, calls_instance, self.modif_matches, self.modif_players, self.modif_participants, self.modif_tournament, self.modif_tournament_data)
+        results = self.generate_leaderboard_csv(tournament[0], tournament[5], "main_leaderboard.csv")
             
-        results = self.generate_leaderboard_csv(tournament_id, tournament_db[5], "main_leaderboard.csv")
-            
-        wix_api.call(self.config, self.config['wix_api']['key'], self.config['wix_api']['site_id'], self.config['wix_api']['account_id'], results, tournament_db[1], self.region.get_region_by_id(tournament_db[5]), tournament_db[4])
+        wix_api.call(self.config, self.config['wix_api']['key'], self.config['wix_api']['site_id'], self.config['wix_api']['account_id'], results, tournament[1], self.region.get_region_by_id(tournament[5]), tournament[4])
             
     def generate_leaderboard_csv(self, tournament_id, region, filename):
         results = []
@@ -377,10 +380,12 @@ class main:
             print(f"csvwriter: {csvwriter}")
         print(f"Main Leaderboard CSV file '{filename}' generated successfully.")
         
-        
+        torunament = self.modif_tournament.get_tournament_by_id(tournament_id)
         results.append([self.leaderboard.get_tournament_leaderboard(tournament_id)])
         
-        filename = f"{tournament_id}_leaderboard.csv"
+        tournament_name = torunament[1]
+        tournament_name = tournament_name.replace(" ", "_")
+        filename = f"{tournament_name}_leaderboard.csv"
         
         # If file exists, delete it
         try:
