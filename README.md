@@ -10,7 +10,7 @@ Currently the application only does Top 8 and produces a Main board, but plan to
 - Python3
 - WIX Account with Access to the Studio of the Site
 - Challonge Account and the API key
-- Email Account with SMTP and IAMP
+- ~~Email Account with SMTP and IAMP~~ To be Removed, this is no longer required.
 
 # Setup
 
@@ -57,6 +57,8 @@ Currently the application only does Top 8 and produces a Main board, but plan to
 
 # Database Strucutre
 
-This has been setup based on another project I have been working on, but can be modified to how you need it. All the Data is grabbed and calculated based on the Top 8 Data and points are caulcated on the Join of the tables.
+This has been setup based on another project I have been working on, but can be modified to how you need it. All the Data is grabbed and calculated based on the top cut data that is collected from a Challonge. Challonge needs to be configured so that that there are two rounds and a Tie Braker for 3rd place for this to work. 
 
-## TODO Add Ability to select TOP 4
+Adding the Challonge link to the config will pull all the information from the API and load it into the DB when it runs. The interval is set for how often we check Challonge to stop it from being spammed.
+
+The APP checks for the statge change of the rounds, when the group stages and finals are underway it will start checking for the Match Data on Challonge. Player data is stored on the DB and each player is given their own ID and is matched up to the TournamentData.
