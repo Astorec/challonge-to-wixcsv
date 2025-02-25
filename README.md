@@ -18,7 +18,7 @@ Currently the application only does Top 8 and produces a Main board, but plan to
 ```json
 {
     "db": {
-      "host": "",
+      "host": "localhost",
       "user": "",
       "pass": "",
       "db": ""
@@ -26,7 +26,11 @@ Currently the application only does Top 8 and produces a Main board, but plan to
     "challonge_api":{
       "username": "",
       "key": "", 
-      "tournament_url": ""
+      "tournament_url": "",
+      "interval": 30
+    },
+    "tournament_data":{
+      "region": "Scotland"
     },
     "wix_api":{
       "key": "",
@@ -34,7 +38,7 @@ Currently the application only does Top 8 and produces a Main board, but plan to
       "account_id": ""
     },
     "wix_collection":{
-      "collection_id": ""
+      "main_board_id": "Main_Board"
     },
     "email":{
       "email_send_from": "",
