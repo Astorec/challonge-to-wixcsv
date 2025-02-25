@@ -3,7 +3,7 @@ import requests
 from utils import misc
 
 
-def call(config, api_key, site_id, account_id, data, tournament_name, region, is_side_event=False):
+def call(dateTime, config, api_key, site_id, account_id, data, tournament_name, region, is_side_event=False):
     headers = {
         "Authorization": api_key,
         "Content-Type": "application/json",
@@ -12,9 +12,9 @@ def call(config, api_key, site_id, account_id, data, tournament_name, region, is
     }
     if not is_side_event:
         create_main_board(headers, data[0], config['wix_collection']['main_board_id'] )
-        create_regional_board(headers, data[1], region[1])
+        create_regional_board(headers, data[2], region[1])
         
-    create_tournament_board(headers, data[2], tournament_name)  
+    create_tournament_board(headers, data[1], tournament_name, dateTime)  
         
 def create_main_board(headers, data, main_board_data):
     main_board_name = main_board_data.replace("_", " ")
@@ -55,9 +55,12 @@ def create_regional_board(headers, data, region):
     
     create_data_items(data, headers,board_id)
     
-def create_tournament_board(headers, data, tournament_name):
-    board_id = f"{tournament_name}_Board"
-    board_name = f"{tournament_name} Board"
+def create_tournament_board(headers, data, tournament_name, dateTime):
+
+    # Remove any slashes from the tournament name
+    tournament_name = tournament_name.replace("/", "-")
+    board_id = f"{tournament_name}_{dateTime}_Board"
+    board_name = f"{tournament_name} Board. Created on {dateTime}"
     post_data = {
         "dataCollectionId": board_id
     }        
@@ -140,7 +143,7 @@ def create_data_items(data, headers, board_id):
                 "rank": int(r[0]),
                 "username": str(r[1]),
                 "total_points": int(r[2]),
-                "win_percentage": f"{r[3]:.2%}",
+                "win_percentage": f"{r[3]}%",
                 "region": str(r[4])
                     }
             })            

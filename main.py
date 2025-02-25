@@ -45,15 +45,15 @@ class main:
         print(f"Old participant count: {db[3]}")
         print(f"New participant count: {participant_count}")
         # Update attendance ID if participant count meets the requirements
-        if participant_count <= 8 and db[3] == 0:
+        if participant_count == 4:
             attendance_id = 1
-        elif participant_count <= 16 and db[3] <= 8:
+        elif participant_count <= 16:
             attendance_id = 2
-        elif participant_count <= 32 and db[3] <= 16:
+        elif participant_count <= 63:
             attendance_id = 3
-        elif participant_count <= 64 and db[3] <= 32:
+        elif participant_count <= 119:
             attendance_id = 4
-        elif participant_count <= 128 and db[3] <= 64:
+        elif participant_count <= 999:
             attendance_id = 5
         else:
             attendance_id = 6
@@ -255,33 +255,33 @@ class main:
                             
                             if participants.__len__() == 0:
                                 print("No participants found.")
-                                continue
 
-                            if participants.__len__() != tournament_data['participants_count']:
+                            if participants.__len__() != 0:
+                                if participants.__len__() != tournament_data['participants_count']:
 
-                                print("Participants changed.")                                                          
-                                # compare participant counts
-                                participant_count = tournament_data['participants_count']
-                                tournament_db = self.update_participant_count(tournament_db, participant_count)
-                                self.update_attendance_id(tournament_db)
-                                self.check_participant_data(tournament_id, participants)
-                                print("Participant count changed.")
-                                print(f"New participant count: {tournament_db[3]}")
+                                    print("Participants changed.")                                                          
+                                    # compare participant counts
+                                    participant_count = tournament_data['participants_count']
+                                    tournament_db = self.update_participant_count(tournament_db, participant_count)
+                                    self.update_attendance_id(tournament_db)
+                                    self.check_participant_data(tournament_id, participants)
+                                    print("Participant count changed.")
+                                    print(f"New participant count: {tournament_db[3]}")
+                                    
+                                    # Set previous participants to current participants
+                                    previous_data_participants = participants
                                 
-                                # Set previous participants to current participants
-                                previous_data_participants = participants
-                                
-                        if tournament_data['state'] == 'complete':
-                            print("Tournament completed. Doing final checks.")
-                            last_check = True
-                        if tournament_data['state'] == 'group_stages_underway':
-                            self.is_two_stage = True                       
-                            current_tournament_json['is_two_stage'] = True
+                                if tournament_data['state'] == 'complete':
+                                    print("Tournament completed. Doing final checks.")  
+                                    last_check = True
+                                if tournament_data['state'] == 'group_stages_underway':
+                                    self.is_two_stage = True                       
+                                    current_tournament_json['is_two_stage'] = True
 
-                            # Going in again to make sure that we have the group IDs are set
-                            self.check_participant_data(tournament_id, participants)
-                            with open('config/tournament_data.json', 'w') as f:
-                                json.dump(tournament_json, f)
+                                    # Going in again to make sure that we have the group IDs are set
+                                    self.check_participant_data(tournament_id, participants)
+                                    with open('config/tournament_data.json', 'w') as f:
+                                        json.dump(tournament_json, f)
                             
                                     
                         else:
@@ -322,23 +322,26 @@ class main:
                         if tournament_data['state'] == 'underway' or tournament_data['state'] == 'group_stages_underway' or is_new:
                             # Check match data
                             self.check_match_data(url, calls_instance)
+
+                        if last_check:
+                            self.check_match_data(url, calls_instance)
                                 
                     if last_check:
                         break   
                                 
                     previous_data = tournament_data
-                        
-                    # Print how much time is left until the next check and update the secondsl left
-                    while interval > 0:
-                        # Decrese the interval every second
-                        interval -= 1
-                        # delete the previous line
-                        print("\033[A                             \033[A")
-                        print(f"Next check in {interval} seconds. This Check will be at {datetime.now() + timedelta(seconds=interval)}")
-                        time.sleep(1)
-                    interval = self.config['challonge_api']['interval']
                 except Exception as e:
-                    print(e)
+                    print(e)    
+                    # Print how much time is left until the next check and update the secondsl left
+                while interval > 0:
+                    # Decrese the interval every second
+                    interval -= 1
+                    # delete the previous line
+                    print("\033[A                             \033[A")
+                    print(f"Next check in {interval} seconds. This Check will be at {datetime.now() + timedelta(seconds=interval)}")
+                    time.sleep(1)
+                interval = self.config['challonge_api']['interval']
+                
                     
     
         tournament = self.modif_tournament.get_tournament_by_url(url)
@@ -346,19 +349,21 @@ class main:
         if tournament[7] == 0:
             # Set the top cut
             set_top_cut.calculate_top_cut(tournament[0], tournament[6], self.stage_two_participants, self.get_top_cut, calls_instance, self.modif_matches, self.modif_players, self.modif_participants, self.modif_tournament, self.modif_tournament_data)
+        
+
+        dateTime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") 
+        results = self.generate_leaderboard_csv(tournament[0], tournament[5], "main_leaderboard.csv", dateTime)
             
-        results = self.generate_leaderboard_csv(tournament[0], tournament[5], "main_leaderboard.csv")
+        wix_api.call(dateTime, self.config, self.config['wix_api']['key'], self.config['wix_api']['site_id'], self.config['wix_api']['account_id'], results, tournament[1], self.region.get_region_by_id(tournament[5]), tournament[4])
             
-        wix_api.call(self.config, self.config['wix_api']['key'], self.config['wix_api']['site_id'], self.config['wix_api']['account_id'], results, tournament[1], self.region.get_region_by_id(tournament[5]), tournament[4])
-            
-    def generate_leaderboard_csv(self, tournament_id, region, filename):
+    def generate_leaderboard_csv(self, tournament_id, region, filename, dateTime):
         results = []
         
         results.append([self.leaderboard.get_main_board()])
     
         # Define the CSV headers
         headers = [
-            "Rank", "Username", "Total Points" "Win Percentage", "Region"
+            "Rank", "Username", "Total Points",  "Win Percentage", "Region"
         ]
         
         # If file exists, delete it
@@ -384,15 +389,19 @@ class main:
         results.append([self.leaderboard.get_tournament_leaderboard(tournament_id)])
         
         tournament_name = torunament[1]
-        tournament_name = tournament_name.replace(" ", "_")
-        filename = f"{tournament_name}_leaderboard.csv"
-        
+        # Remove any slashes from the tournament name
+        tournament_name = tournament_name.replace("/", "_")
+        tournament_name = tournament_name.replace(" ", "_")       
+
+
+        filename = f"{tournament_name}_{dateTime}_leaderboard.csv"
         # If file exists, delete it
         try:
             os.remove(filename)
         except FileNotFoundError:
             pass
-        
+
+
         # Write the results to a CSV file
         with open(filename, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)

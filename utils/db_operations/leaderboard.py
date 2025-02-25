@@ -7,11 +7,16 @@ class leaderboard:
     def get_main_board(self):
         # Query to get the tournament data with player count
         query = """
-        SELECT
-		RANK() OVER (ORDER BY SUM(td.score) DESC) AS player_rank,
+SELECT
+		ROW_NUMBER() OVER (ORDER BY SUM(td.score) DESC) AS player_rank,
         COALESCE(p.username, p.name) AS display_name,
-        SUM(td.score) AS total_score,
-        SUM(td.win_percentage) AS total_win_percentage,
+        SUM(td.score) AS total_score,        
+        ROUND(
+          CASE
+          WHEN SUM(td.wins) + SUM(td.losses) = 0 THEN 0.0
+          ELSE (SUM(td.wins) * 100.0) / (SUM(td.wins) + SUM(td.losses))
+          END
+          ) AS total_win_percentage,
         r.region
         FROM
             tblTournamentData td
@@ -38,10 +43,15 @@ class leaderboard:
         # Query to get the tournament data with player count for a specific tournament
         query = """
         SELECT
-            td.rank,
+            ROW_NUMBER() OVER (ORDER BY SUM(td.score) DESC) AS player_rank,
             COALESCE(p.username, p.name) AS display_name,    
             td.score,
-            td.win_percentage,
+                    ROUND(
+          CASE
+          WHEN SUM(td.wins) + SUM(td.losses) = 0 THEN 0.0
+          ELSE (SUM(td.wins) * 100.0) / (SUM(td.wins) + SUM(td.losses))
+          END
+          ) AS win_percentage,
             r.region
         FROM
             tblTournamentData td
@@ -53,6 +63,12 @@ class leaderboard:
             tblRegions r ON p.region = r.id
         WHERE
             td.tournament_id = %s
+        GROUP BY 
+            td.rank,
+            p.username,
+            p.name,
+            td.score,
+            r.region
         ORDER BY
                 td.rank ASC
         """        
@@ -65,10 +81,15 @@ class leaderboard:
         # Query to get the tournament data with player count for a specific region
         query = """
       SELECT
-		RANK() OVER (ORDER BY SUM(td.score) DESC) AS player_rank,
+		ROW_NUMBER() OVER (ORDER BY SUM(td.score) DESC) AS player_rank,
         COALESCE(p.username, p.name) AS display_name,
         SUM(td.score) AS total_score,
-        SUM(td.win_percentage) AS total_win_percentage,
+                ROUND(
+          CASE
+          WHEN SUM(td.wins) + SUM(td.losses) = 0 THEN 0.0
+          ELSE (SUM(td.wins) * 100.0) / (SUM(td.wins) + SUM(td.losses))
+          END
+          ) AS total_win_percentage,
         r.region
     FROM
         tblTournamentData td
