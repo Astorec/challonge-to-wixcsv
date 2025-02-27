@@ -6,7 +6,7 @@ class tournament:
         self.cursor = db.cursor()
     
     # Create new tournament if it doesn't exist
-    def create_tournament(self, tournament_name, url, participants, region, is_side_event=False, state='upcoming'):
+    def create_tournament(self, tournament_name, url, participants, region, is_side_event=False, state='upcoming', is_store_championship=True):
     # Check if tournament already exists
         test = self.cursor.fetchall()
         if test:
@@ -21,8 +21,8 @@ class tournament:
             return result
         
         self.cursor.execute(
-            "INSERT INTO tblTournaments (name, url, participants, is_side_event, region, state) VALUES (%s, %s, %s, %s, %s, %s)",
-            (tournament_name, url, participants, is_side_event, region, state)
+            "INSERT INTO tblTournaments (name, url, participants, is_side_event, region, state, is_store_championship) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (tournament_name, url, participants, is_side_event, region, state, is_store_championship)
         )
         self.db.commit()
         
@@ -93,6 +93,26 @@ class tournament:
         )
         return self.cursor.fetchone()
     
+    def set_championship_type(self, tournament_id, value):
+        self.cursor.execute(
+            "UPDATE tblTournaments SET is_store_championship=%s WHERE id=%s",
+            ( value, tournament_id,)
+        )
+        self.db.commit()
+        
+        self.cursor.execute(
+            "SELECT * FROM tblTournaments WHERE id=%s",
+             (tournament_id, )
+        )
+        return self.cursor.fetchall()
+    
+    def get_championship_type(self, tournament_id):
+        self.cursor.execute(
+            "SELECT is_store_championship FROM tblTournaments WHERE id=%s",
+            (tournament_id,)
+        )
+        return self.cursor.fetchone()
+
     def set_finalized(self, tournament_id):
         self.cursor.execute(
             "UPDATE tblTournaments SET finalized=1 WHERE id=%s",

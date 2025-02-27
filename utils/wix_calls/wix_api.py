@@ -10,7 +10,7 @@ def call(dateTime, config, api_key, site_id, account_id, data, tournament_name, 
         "wix-account-id": account_id,
         "wix-site-id": site_id
     }
-    if not is_side_event:
+    if not is_side_event and config['tournament_data']['is_store_championship'] == True:
         create_main_board(headers, data[0], config['wix_collection']['main_board_id'] )
         create_regional_board(headers, data[2], region[1])
         

@@ -58,6 +58,7 @@ class initDB:
                 " attendance_id INT UNSIGNED DEFAULT 6,"
                 " finalized TINYINT(1) DEFAULT 0,"
                 " state VARCHAR(255) NOT NULL DEFAULT 'upcoming',"
+                " is_store_championship tinyint(1) NULL DEFAULT 1,"
                 " FOREIGN KEY (region) REFERENCES tblRegions(id),"
                 " FOREIGN KEY (attendance_id) REFERENCES tblTournamentAttendance(id)"
                 ");"

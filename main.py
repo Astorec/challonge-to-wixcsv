@@ -199,14 +199,26 @@ class main:
                 continue
 
     def check_periodically(self, username, api_key, url, interval=30):
+        # The tournament id is extracted from the URL which we do before passing it in to the function
         tournament_id = url
+        
+        # Calls instance is used to make calls to the Challonge API
         calls_instance = calls.calls(username, api_key)
+
+        # Initialize variables
         previous_data = None
         previous_data_participants = None
         last_check = False
         tournament_json = None
         current_tournament_json = None
-        # Get Tournament Data from JSON File in config folder
+
+
+        # Get Tournament Data from JSON File in config folder. This is mostly used
+        # for tracking the two stage tournament, but I'm debating removing it as
+        # I think I can store this data in the database easily enough and shoudln't 
+        # need to be a separate file.
+
+        #region Tournament Data JSON
         if not os.path.exists('config/tournament_data.json'):
             # Create the file
             with open('config/tournament_data.json', 'w') as f:
@@ -219,18 +231,31 @@ class main:
             if t[0] == url:
                 current_tournament_json = t
                 break
-                
-        if self.modif_tournament.get_finalized_status(tournament_id) != 1:
+        #endregion
         
+        # Check if the tournament is finalized. The finalized status is set to 1 after all
+        # stages of the tournament have been completed, so that we don't make unnecessary calls
+        if self.modif_tournament.get_finalized_status(tournament_id) != 1:
+            
+            # Check the tournament state every interval seconds. This is set within the config json
             while True:
                 try:
                     print("Checking...")
+                    
+                    # Ge the tournament data from the Challonge API
                     tournament_data = calls_instance.get_tournament(tournament_id)
                         
                     print("Tournament State: " + tournament_data['state'])
+
+                    # We check the states of the tournament to see what we need to do. If the tournament is complete
+                    # or is awaiting review we can set the last_check to true to ensure that all the data is up to date
+                    # before generating the leaderboards
                     if tournament_data['state'] == 'complete' or tournament_data['state'] == 'awaiting_review':      
                         last_check = True
-                        print("Last check.")             
+                        print("Last check.")  
+
+                    # If the current_json is None, we try and get the data from the json file. Again like above
+                    # This could be updated to be done Via the DB is still here from the inital code         
                     if current_tournament_json is None:
                     # try and get data from json
                         with open('config/tournament_data.json') as f:
@@ -248,9 +273,14 @@ class main:
                         else:
                             current_tournament_json = tournament_json[url]
                             
-                        
+                    # If the previous data is not None, we can compare the data to see if there are any changes   
                     if previous_data is not None:    
+                        
+                        # Get the Participants from the API
                         participants = calls_instance.get_participants(tournament_id)
+
+                        # IF there has been any changes to the participants and we are in a pending state, upcoming state or it's the last check
+                        # we can update the data in the database
                         if participants != previous_data_participants and tournament_data['state'] == 'pending' or tournament_data['state'] == 'upcoming' or last_check:
                             
                             if participants.__len__() == 0:
@@ -259,34 +289,47 @@ class main:
                             if participants.__len__() != 0:
                                 if participants.__len__() != tournament_data['participants_count']:
 
-                                    print("Participants changed.")                                                          
+                                    print("Participants changed.") 
+
                                     # compare participant counts
                                     participant_count = tournament_data['participants_count']
+
+                                    # Update the Participant count for the tournament
                                     tournament_db = self.update_participant_count(tournament_db, participant_count)
+
+                                    # Check if we need to update the Attendance ID. This is relevant as tblAttendance
+                                    # determins the Top Cut for the tournament
                                     self.update_attendance_id(tournament_db)
+
+                                    # Check the participant data
                                     self.check_participant_data(tournament_id, participants)
                                     print("Participant count changed.")
                                     print(f"New participant count: {tournament_db[3]}")
                                     
                                     # Set previous participants to current participants
                                     previous_data_participants = participants
-                                
+
+                                # If the state is set to complete, we can initalise a final check on the next loop
                                 if tournament_data['state'] == 'complete':
                                     print("Tournament completed. Doing final checks.")  
                                     last_check = True
+
                                 if tournament_data['state'] == 'group_stages_underway':
                                     self.is_two_stage = True                       
                                     current_tournament_json['is_two_stage'] = True
 
-                                    # Going in again to make sure that we have the group IDs are set
+                                    #  Double check that we have the correct data in the JSON file
                                     self.check_participant_data(tournament_id, participants)
                                     with open('config/tournament_data.json', 'w') as f:
                                         json.dump(tournament_json, f)
-                            
-                                    
+                              
                         else:
                             print("No changes in Tournament Data detected.")
-                            
+                        
+
+                        # If the state is set to underway, we can start to pull the match data and check for
+                        # updates. The tournament should alwyas be setup as two stage so group_stages_underway
+                        # should be the state that returns when the tournament is in the group stages
                         if tournament_data['state'] == 'underway' or tournament_data['state'] == 'group_stages_underway' or last_check:
                             # Check match data
                             self.check_match_data(url, calls_instance)
@@ -296,16 +339,22 @@ class main:
                         if last_check or current_tournament_json['is_two_stage'] == True and tournament_data['state'] == 'underway' and self.stage_two_participants.__len__() == 0:
                     
                             self.stage_two_participants = set_top_cut.get_finals_players(url, calls_instance, self.stage_two_participants, self.modif_tournament, self.modif_participants, self.modif_matches, self.modif_tournament_data)
-                            
-                                    
+
+                    # This is the same as above but there are some differences to ensure that we are getting the correct data
+                    # on the first run with this tournament.
                     else:
                         is_new = True
                         print("Initial data fetched.")            
                         participant_count = tournament_data['participants_count']
                         participants = calls_instance.get_participants(tournament_id)
+                        get_tournament = self.modif_tournament.get_tournament_by_url(url)
                         # Check if tournament exists
-                        if self.modif_tournament.get_tournament_by_url(url) is not None:
+                        if get_tournament is not None:
+
                             is_new = False
+                            if self.modif_tournament.get_championship_type(get_tournament[0])[0]is not self.config['tournament_data']['is_store_championship']:
+                                # False is 0 and True is 1
+                                get_tournament = self.modif_tournament.set_championship_type(get_tournament[0], self.config['tournament_data']['is_store_championship'])
                             
                         tournament_db = self.modif_tournament.create_tournament(tournament_data['name'], url, participant_count, self.region.get_region_id_by_name(self.config['tournament_data']['region'])[0])
                             
@@ -343,19 +392,31 @@ class main:
                 interval = self.config['challonge_api']['interval']
                 
                     
-    
+        # If the tournament is finalized, we can generate the leaderboards.
+                
+        # Get the tournament data from the database. This is so that we have the most up to date version
         tournament = self.modif_tournament.get_tournament_by_url(url)
         
+        # Calculate the top_cut from the tournament data
         if tournament[7] == 0:
             # Set the top cut
             set_top_cut.calculate_top_cut(tournament[0], tournament[6], self.stage_two_participants, self.get_top_cut, calls_instance, self.modif_matches, self.modif_players, self.modif_participants, self.modif_tournament, self.modif_tournament_data)
         
 
+        # Generate the Boards and output them to CSV Files. We generate the Date and time in the event of modifications that occur
         dateTime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") 
         results = self.generate_leaderboard_csv(tournament[0], tournament[5], "main_leaderboard.csv", dateTime)
-            
-        wix_api.call(dateTime, self.config, self.config['wix_api']['key'], self.config['wix_api']['site_id'], self.config['wix_api']['account_id'], results, tournament[1], self.region.get_region_by_id(tournament[5]), tournament[4])
-            
+        print("CSV files generated. Checking if Wix API is configured.")
+
+        # We only make the WIX API calls if the WIX API has been configured
+        if self.config['wix_api']['key'] is not None and self.config['wix_api']['site_id'] is not None and self.config['wix_api']['account_id'] is not None:
+            print("Wix API configured. Making Wix API call.")
+            wix_api.call(dateTime, self.config, self.config['wix_api']['key'], self.config['wix_api']['site_id'], self.config['wix_api']['account_id'], results, tournament[1], self.region.get_region_by_id(tournament[5]), tournament[4])
+        else:
+            print("Wix API not configured. Skipping Wix API call.")
+
+
+    # Generate the CSV files for the leaderboards. Returns the results for when the WIX api is configured
     def generate_leaderboard_csv(self, tournament_id, region, filename, dateTime):
         results = []
         
@@ -363,28 +424,47 @@ class main:
     
         # Define the CSV headers
         headers = [
-            "Rank", "Username", "Total Points",  "Win Percentage", "Region"
-        ]
-        
-        # If file exists, delete it
-        try:
-            os.remove(filename)
-        except FileNotFoundError:
-            pass
-        
-        
-        # Write the results to a CSV file
-        with open(filename, 'w', newline='') as csvfile:
-            csvwriter = csv.writer(csvfile)
-            csvwriter.writerow(headers)
-            for data in results[0]:
-                for row in data:
-                    print(f"Row: {row}")
-                    csvwriter.writerow(list(row))
-                
-            print(f"csvwriter: {csvwriter}")
-        print(f"Main Leaderboard CSV file '{filename}' generated successfully.")
-        
+            "Rank", "Username", "Total Points", "Win Percentage", "Region"
+        ]       
+
+        # We only generate the Main and Region baords if it is a store championship       
+        if self.config['tournament_data']['is_store_championship'] == 1:
+            #region Main Board
+            with open(filename, 'w', newline='') as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(headers)
+                for data in results[0]:
+                    for row in data:
+                        print(f"Row: {row}")
+                        csvwriter.writerow(list(row))
+                    
+                print(f"csvwriter: {csvwriter}")
+            print(f"Main Leaderboard CSV file '{filename}' generated successfully.")
+            #endregion
+            
+            #region Region Leaderboard
+            results.append([self.leaderboard.get_region_leaderboard(region)])
+            
+            filename = f"{self.region.get_region_by_id(region)[1]}_leaderboard.csv"
+            
+            #if file exists, delete it
+            try:
+                os.remove(filename)
+            except FileNotFoundError:
+                pass
+            
+            # Write the results to a CSV file
+            with open(filename, 'w', newline='') as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(headers)            
+                for data in results[1]:
+                    for row in data:
+                        print(f"Row: {row}")
+                        csvwriter.writerow(list(row))
+            #endregion
+
+        # Always generate the Tournament board
+        #region Tournament Leaderboard
         torunament = self.modif_tournament.get_tournament_by_id(tournament_id)
         results.append([self.leaderboard.get_tournament_leaderboard(tournament_id)])
         
@@ -401,36 +481,23 @@ class main:
         except FileNotFoundError:
             pass
 
-
-        # Write the results to a CSV file
-        with open(filename, 'w', newline='') as csvfile:
-            csvwriter = csv.writer(csvfile)
-            csvwriter.writerow(headers)            
-            for data in results[1]:
-                for row in data:
-                    print(f"Row: {row}")
-                    csvwriter.writerow(list(row))
-
-        
-        results.append([self.leaderboard.get_region_leaderboard(region)])
-        
-        filename = f"{self.region.get_region_by_id(region)[1]}_leaderboard.csv"
-        
-        #if file exists, delete it
-        try:
-            os.remove(filename)
-        except FileNotFoundError:
-            pass
         
         # Write the results to a CSV file
         with open(filename, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
-            csvwriter.writerow(headers)            
-            for data in results[2]:
-                for row in data:
-                    print(f"Row: {row}")
-                    csvwriter.writerow(list(row))
-        
+            csvwriter.writerow(headers)
+            # if is not store championship, loop through results[0]
+            if self.config['tournament_data']['is_store_championship'] == 0:
+                for data in results[0]:
+                    for row in data:
+                        print(f"Row: {row}")
+                        csvwriter.writerow(list(row))
+            else:
+                for data in results[2]:
+                    for row in data:
+                        print(f"Row: {row}")
+                        csvwriter.writerow(list(row))
+        #endregion
         
         print(f"Tournament Leaderboard CSV file '{filename}' generated successfully.")
         
@@ -439,8 +506,11 @@ class main:
 
 
     def start(self):
+        # Generate the Database from the config file
         self.db = initDB.initDB('config/config.json').get_connection()
 
+        # Create instances of the classes for DB operations
+        #region DB Class Initialization
         self.modif_tournament = tournament.tournament(self.db)
         self.modif_participants = participants.participants(self.db)
         self.modif_players = players.player(self.db)
@@ -449,10 +519,14 @@ class main:
         self.get_top_cut = top_cut.top_cut(self.db)
         self.leaderboard = leaderboard.leaderboard(self.db)
         self.region = region.region(self.db)
+        #endregion
         
+        #region Challonge Settings
         username = self.config['challonge_api']['username']
         api_key = self.config['challonge_api']['key']
         url = misc.extract_tournament_id(self.config['challonge_api']['tournament_url'])
+        #endregion
+    
         self.check_periodically(username, api_key,  url, interval=self.config['challonge_api']['interval'])
 
 

@@ -26,6 +26,8 @@ SELECT
             tblTournaments t ON td.tournament_id = t.id
         JOIN
             tblRegions r ON p.region = r.id
+        WHERE
+            t.is_store_championship = 1
         GROUP BY
             p.name,
             p.username,
@@ -100,7 +102,7 @@ SELECT
     JOIN
         tblRegions r ON p.region = r.id
     WHERE
-        t.region = %s
+        t.region = %s AND t.is_store_championship = 1
     GROUP BY
         p.name,
         p.username,
