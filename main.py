@@ -44,20 +44,7 @@ class main:
         print("Participant count changed.")
         print(f"Old participant count: {db[3]}")
         print(f"New participant count: {participant_count}")
-        # Update attendance ID if participant count meets the requirements
-        if participant_count == 4:
-            attendance_id = 1
-        elif participant_count <= 16:
-            attendance_id = 2
-        elif participant_count <= 63:
-            attendance_id = 3
-        elif participant_count <= 119:
-            attendance_id = 4
-        elif participant_count <= 999:
-            attendance_id = 5
-        else:
-            attendance_id = 6
-        self.modif_tournament.set_attendance_id(db[0], attendance_id)
+        self.update_attendance_id(db)
         return self.modif_tournament.update_participant_count(db[0], participant_count)
     
 

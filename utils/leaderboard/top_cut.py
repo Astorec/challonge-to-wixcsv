@@ -24,7 +24,7 @@ def calculate_top_cut(tournament_id, attendance_id, stage_two_participants, get_
             matches = calls_instance.get_matches(url)
             participants = modif_participants.get_participants_by_tournament_id(tournament_id)
             finals_matches = []
-            
+            top_cut_size = modif_tournament_data.get_top_cut_size(tournament_id)
             # Remove all matches that are not in the top cut
             for m in matches:
                 if m['group_id'] is None:
@@ -82,9 +82,11 @@ def calculate_top_cut(tournament_id, attendance_id, stage_two_participants, get_
                         modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id)
                     elif i + 1 == max_rounds - 1:
                         continue
-                    else:
+                    else:                        
                         modif_tournament_data.add_placement(tournament_id, loser_id, placement_copy)
-                        modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id)
+
+                        if placement_copy <= top_cut_size:
+                            modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id)
                         placement_copy -= 1
 
             

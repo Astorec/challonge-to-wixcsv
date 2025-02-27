@@ -98,6 +98,13 @@ class tournamentData:
         )
         return self.cursor.fetchone()
     
+    def get_top_cut_size(self, touranment_id):
+        self.cursor.execute(
+            "SELECT top_cut FROM tblTournamentAttendance WHERE id=(SELECT attendance_id FROM tblTournaments WHERE id=%s)",
+            (touranment_id,)
+        )
+        return self.cursor.fetchone()[0]
+
     def update_score_for_top_cut(self, tournament_id, player_db_id):
         # Get the attendance_id from tblTournaments where the tournament_id is the one we're looking for
         # and get the top_cut from tblTournamentAttendance where the attendance_id is the one we just got
@@ -142,10 +149,11 @@ class tournamentData:
             "SELECT `rank` FROM tblTournamentData WHERE tournament_id=%s AND player_db_id=%s",
             (tournament_id, player_db_id)
         )
+        
         placement = self.cursor.fetchone()[0]
         
         self.cursor.execute(
-            "UPDATE tblTournamentData SET score=score*%s WHERE tournament_id=%s AND player_db_id=%s",
+            "UPDATE tblTournamentData SET score=score+%s WHERE tournament_id=%s AND player_db_id=%s",
             (score_modifiers[placement - 1], tournament_id, player_db_id)
         )
         self.db.commit()
