@@ -68,7 +68,7 @@ class initDB:
                 " id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,"
                 " name VARCHAR(255) NOT NULL,"
                 " username VARCHAR(255) NULL UNIQUE,"
-                " region INT DEFAULT 14,"
+                " region INT DEFAULT 13,"
                 " FOREIGN KEY (region) REFERENCES tblRegions(id)"
                 ");"
             ),
