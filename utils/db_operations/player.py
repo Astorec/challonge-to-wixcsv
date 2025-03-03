@@ -6,7 +6,7 @@ class player:
         self.db = db
         self.cursor = db.cursor()
 
-    def create_player(self, name, username):
+    def create_player(self, name, username, region):
         try:
             # if the username is not none, check if it already exists
             if username:
@@ -21,12 +21,18 @@ class player:
             
             # If player doesn't exist, create a new player
             self.cursor.execute(
-                "INSERT INTO tblPlayers (name, username) VALUES (%s, %s)",
-                (name, username)
+                "SELECT id FROM tblRegions WHERE region=%s",                                
+                (region,)
             )
-            
+
+            region_id = self.cursor.fetchone()[0]
+
+            self.cursor.execute(
+                "INSERT INTO tblPlayers (name, username, region) VALUES (%s, %s, %s)",
+                (name, username,region_id)
+            )            
             self.db.commit()
-            
+
             # If username is none, set query to get the player by name
             if not username:
                 self.cursor.execute(
@@ -39,7 +45,7 @@ class player:
             # return the newly created player
             self.cursor.execute(
                 "SELECT * FROM tblPlayers WHERE name=%s AND username=%s",
-                (name, username)
+                (name, username,)
             )
             result = self.cursor.fetchone()
             print(f"Create player result: {result}")  # Debugging statement

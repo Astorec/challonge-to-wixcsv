@@ -33,7 +33,7 @@ class tournamentData:
     
     def add_win(self, tournament_id, player_db_id):
         self.cursor.execute(
-            "UPDATE tblTournamentData SET wins=wins+1, score=score+1 WHERE tournament_id=%s AND player_db_id=%s",
+            "UPDATE tblTournamentData SET wins=wins+1 WHERE tournament_id=%s AND player_db_id=%s",
             (tournament_id, player_db_id)
         )
         self.db.commit()
@@ -59,7 +59,7 @@ class tournamentData:
     
     def remove_win(self, tournament_id, player_db_id):
         self.cursor.execute(
-            "UPDATE tblTournamentData SET wins=wins-1, score=score-1 WHERE tournament_id=%s AND player_db_id=%s",
+            "UPDATE tblTournamentData SET wins=wins-1 WHERE tournament_id=%s AND player_db_id=%s",
             (tournament_id, player_db_id)
         )
         self.db.commit()
@@ -153,7 +153,7 @@ class tournamentData:
         placement = self.cursor.fetchone()[0]
         
         self.cursor.execute(
-            "UPDATE tblTournamentData SET score=score+%s WHERE tournament_id=%s AND player_db_id=%s",
+            "UPDATE tblTournamentData SET score=%s WHERE tournament_id=%s AND player_db_id=%s",
             (score_modifiers[placement - 1], tournament_id, player_db_id)
         )
         self.db.commit()

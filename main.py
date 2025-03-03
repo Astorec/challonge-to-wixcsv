@@ -69,13 +69,10 @@ class main:
 
     def check_participant_data(self,tournament_id, participants):
         
-        
         for p in participants:
             print(f"Adding participant {p['name']}")
             
-            
             player_db = None
-            
             
             if p['username'] is not None:
                 player_db = self.modif_players.get_player_by_username(p['username'])
@@ -85,7 +82,7 @@ class main:
             
             if player_db is None:
                 _player = player(p['name'], p['username'])
-                player_db = self.modif_players.create_player(_player.name, _player.username)
+                player_db = self.modif_players.create_player(_player.name, _player.username, self.config['tournament_data']['region'])
                 if player_db is None:
                     print(f"Failed to create player: {_player.name}, {_player.username}")
                     continue                
@@ -118,7 +115,6 @@ class main:
 
     def check_match_data(self, tournament_id, calls_instance):
         matches = calls_instance.get_matches(tournament_id)
-        
         # Get tournament ID from DB
         tournament_db = self.modif_tournament.get_tournament_by_url(tournament_id)
         if tournament_db is None:
@@ -136,8 +132,6 @@ class main:
                     continue
                 print(f"Adding match with ID {m['id']}, Player 1 ID: {m['player1_id']}, Player 2 ID: {m['player2_id']}")
                 match_db = self.modif_matches.add_match(m['id'], m['player1_id'], m['player2_id'], tournament_db[0])
-                
-         
                 
                 if match_db is None:
                     print(f"Error: Failed to add match with ID {m['id']}. Player 1 ID was: {m['player1_id']}, Player 2 ID was: {m['player2_id']}. Skipping...")
@@ -160,24 +154,20 @@ class main:
                         winner_player_id = winner_player[0][0]  # Extract the player ID from the tuple
                         loser_player_id = loser_player[0][0]  # Extract the player ID from the tuple
                         
-                        winner_player_id = self.modif_participants.get_participant_by_player_id_tournament_id(m['winner_id'], tournament_db[0])[0][1]
-                        loser_player_id = self.modif_participants.get_participant_by_player_id_tournament_id(m['loser_id'], tournament_db[0])[0][1]
+                        winner_player = self.modif_participants.get_participant_by_player_id_tournament_id(m['winner_id'], tournament_db[0])[0]
+                        loser_player = self.modif_participants.get_participant_by_player_id_tournament_id(m['loser_id'], tournament_db[0])[0]
                         match_db = self.modif_matches.update_match_winner(match_db[0], m['winner_id'], m['loser_id'])
                         if match_db is None:
                             print(f"Error: Failed to update match winner for match ID {m['id']}.")
-                            continue
+                            continue       
                         
-                        
-                        
-                        # Update Tournament Data
-                        self.modif_tournament_data.add_win(tournament_db[0], winner_player_id)
-                        self.modif_tournament_data.add_loss(tournament_db[0], loser_player_id)
-                        continue
+                    self.modif_tournament_data.add_win(tournament_db[0], winner_player[1])
+                    self.modif_tournament_data.add_loss(tournament_db[0], loser_player[1])
                 
             # Check if there is not a winner ID but was previously set
             if m['winner_id'] is None and match_db[3] is not None:
                 winner_player_id = match_db[3]
-                loser_player_id = match_db[4]
+                loser_player_id = match_db[4]                
                 self.modif_tournament_data.remove_win(tournament_db[0], winner_player_id)
                 self.modif_tournament_data.remove_loss(tournament_db[0], loser_player_id)
                 match_db = self.modif_matches.undo_match_winner(match_db[0])
@@ -387,7 +377,7 @@ class main:
         # Calculate the top_cut from the tournament data
         if tournament[7] == 0:
             # Set the top cut
-            set_top_cut.calculate_top_cut(tournament[0], tournament[6], self.stage_two_participants, self.get_top_cut, calls_instance, self.modif_matches, self.modif_players, self.modif_participants, self.modif_tournament, self.modif_tournament_data)
+            set_top_cut.calculate_top_cut(self.config["tournament_data"]["is_store_championship"], tournament[0], calls_instance, self.modif_participants, self.modif_tournament, self.modif_tournament_data)
         
 
         # Generate the Boards and output them to CSV Files. We generate the Date and time in the event of modifications that occur
@@ -489,7 +479,7 @@ class main:
         print(f"Tournament Leaderboard CSV file '{filename}' generated successfully.")
         
         print(f"Results Length: {results.__len__()}")
-        return results;
+        return results
 
 
     def start(self):

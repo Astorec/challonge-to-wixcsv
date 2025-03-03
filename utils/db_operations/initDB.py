@@ -131,212 +131,212 @@ class initDB:
 
          # Insert initial data into tblRegions
 
-            regions = [
-                ('Scotland', 'SCOT'),
-                ('North East', 'NE'),
-                ('North West', 'NW'),
-                ('Yorkshire & The Humber', 'YH'),
-                ('East Midlands', 'EM'),
-                ('West Midlands', 'WM'),
-                ('East of England', 'EE'),
-                ('London', 'LOND'),
-                ('South East', 'SE'),
-                ('South West', 'SW'),
-                ('Wales', 'WAL'),
-                ('Northern Ireland', 'NI'),
-                ('Unassigned', 'UNASSIGNED')
-            ]
+        regions = [
+            ('Scotland', 'SCOT'),
+            ('North East', 'NE'),
+            ('North West', 'NW'),
+            ('Yorkshire & The Humber', 'YH'),
+            ('East Midlands', 'EM'),
+            ('West Midlands', 'WM'),
+            ('East of England', 'EE'),
+            ('London', 'LOND'),
+            ('South East', 'SE'),
+            ('South West', 'SW'),
+            ('Wales', 'WAL'),
+            ('Northern Ireland', 'NI'),
+            ('Unassigned', 'UNASSIGNED')
+        ]
 
-            try:
-                for region, short in regions:
-                    self.cursor.execute(
-                        "INSERT INTO tblRegions (region, short) VALUES (%s, %s)",
-                        (region, short)
-                    )
-                self.connection.commit()
-                print("Initial data inserted into tblRegions successfully")
-            except mysql.connector.Error as err:
-                print(f"Error inserting data into tblRegions: {err}")
+        try:
+            for region, short in regions:
+                self.cursor.execute(
+                    "INSERT INTO tblRegions (region, short) VALUES (%s, %s)",
+                    (region, short)
+                )
+            self.connection.commit()
+            print("Initial data inserted into tblRegions successfully")
+        except mysql.connector.Error as err:
+            print(f"Error inserting data into tblRegions: {err}")
                 
-            # Insert initial data into tblTournamentAttendance
-            attendance = [
-                (1, 4, 8),
-                (2, 9, 16),
-                (4, 17, 32),
-                (8, 33, 64),
-                (16, 65, 128),
-                (0, 0, 0)
-            ]
+        # Insert initial data into tblTournamentAttendance
+        attendance = [
+            (1, 4, 8),
+            (2, 9, 16),
+            (4, 17, 32),
+            (8, 33, 64),
+            (16, 65, 128),
+            (0, 0, 0)
+        ]
             
-            try:
-                for top_cut, min, max in attendance:
-                    self.cursor.execute(
-                        "INSERT INTO tblTournamentAttendance (top_cut, min, max) VALUES (%s, %s, %s)",
-                        (top_cut, min, max)
-                    )
-                self.connection.commit()
-                print("Initial data inserted into tblTournamentAttendance successfully")
-            except mysql.connector.Error as err:
-                print(f"Error inserting data into tblTournamentAttendance: {err}")
+        try:
+            for top_cut, min, max in attendance:
+                self.cursor.execute(
+                    "INSERT INTO tblTournamentAttendance (top_cut, min, max) VALUES (%s, %s, %s)",
+                    (top_cut, min, max)
+                )
+            self.connection.commit()
+            print("Initial data inserted into tblTournamentAttendance successfully")
+        except mysql.connector.Error as err:
+            print(f"Error inserting data into tblTournamentAttendance: {err}")
 
-            parts = [
-                ('Assist Blade', 'Bumper'),
-                ('Assist Blade', 'Round'),
-                ('Assit Blade', 'Slash'),
-                ('Lock Chip', 'Dran'),
-                ('Lock Chip', 'Hells'),
-                ('Lock Chip', 'Perseus'),
-                ('Lock Chip', 'Wizard'),
-                ('Assist Blade', 'Bumper'),
-                ('Assist Blade', 'Round'),
-                ('Assit Blade', 'Slash'),
-                ('Lock Chip', 'Dran'),
-                ('Lock Chip', 'Hells'),
-                ('Lock Chip', 'Perseus'),
-                ('Lock Chip', 'Wizard'),
-                ('Bit', 'Accel'),
-                ('Bit', 'Ball'),
-                ('Bit', 'Bound Spike'),
-                ('Bit', 'Cyclone'),
-                ('Bit', 'Disk Ball'),
-                ('Bit', 'Dot'),
-                ('Bit', 'Elevate'),
-                ('Bit', 'Free Ball'),
-                ('Bit', 'Gear Ball'),
-                ('Bit','Gear Flat'),
-                ('Bit', 'Gear Needle'),
-                ('Bit', 'Gear Point'),
-                ('Bit', 'Glide'),
-                ('Bit', 'Hexa'),
-                ('Bit', 'High Needle'),
-                ('Bit', 'High taper'),
-                ('Bit', 'Level'),
-                ('Bit', 'Low Flat'),
-                ('Bit', 'Low Orb'),
-                ('Bit', 'Low Rush'),
-                ('Bit', 'Metal Needle'),
-                ('Bit', 'Needle'),
-                ('Bit', 'Orb'),
-                ('Bit', 'Point'),
-                ('Bit', 'Quake'),
-                ('Bit', 'Rubber Acce'),
-                ('Bit', 'Rush'),
-                ('Bit', 'Spike'),
-                ('Bit', 'Taper'),
-                ('Bit', 'Trans Point'),
-                ('Bit', 'Under Needle'),
-                ('Bit', 'Unite'),
-                ('Bit', 'Vortex'),
-                ('Bit', 'Wedge'),
-                ('Blade', 'AeroPegasus'),
-                ('Blade', 'Bite Croc'),
-                ('Blade', 'Black Shell'),
-                ('Blade', 'Captain America'),
-                ('Blade', 'CobaltDragoon'),
-                ('Blade', 'CobaltDrake'),
-                ('Blade', 'CrimsonGaruda'),
-                ('Blade', 'Darth Vader'),
-                ('Blade', 'DracielShield'),
-                ('Blade', 'DragoonStorm'),
-                ('Blade', 'Dran Buster'),
-                ('Blade', 'DranDagger'),
-                ('Blade', 'DranSword'),
-                ('Blade', 'DranzerSpiral'),
-                ('Blade', 'DrigerSlash'),
-                ('Blade', 'Ghost Circle'),
-                ('Blade', 'GolemRock'),
-                ('Blade', 'Hells Hammer'),
-                ('Blade', 'HellsChain'),
-                ('Blade', 'HellsScythe'),
-                ('Blade', 'Hover Wyvern'),
-                ('Blade', 'Impact Drake'),
-                ('Blade', 'Iron Man'),
-                ('Blade', 'Knife Shinobi'),
-                ('Blade', 'KnightLance'),
-                ('Blade', 'KnightMail'),
-                ('Blade', 'KnightShield'),
-                ('Blade', 'Leon Claw'),
-                ('Blade', 'LeonCrest'),
-                ('Blade', 'Lightning L-Drago (Rapid-Hit Type)'),
-                ('Blade', 'Lightning L-Drago (Upper Type)'),
-                ('Blade', 'Luke Skywalker'),
-                ('Blade', 'Megatron'),
-                ('Blade', 'Moff Gideon'),
-                ('Blade', 'Optimus Primal'),
-                ('Blade', 'Optimus Prime'),
-                ('Blade', 'Phoenix Rudder'),
-                ('Blade', 'Phoenix Wing'),
-                ('Blade', 'PhoenixFeather'),
-                ('Blade', 'Red Hulk'),
-                ('Blade', 'Rhino Horn'),
-                ('Blade', 'Roar Tyranno'),
-                ('Blade', 'SamuraiSaber'),
-                ('Blade', 'Savage Bear'),
-                ('Blade', 'SharkEdge'),
-                ('Blade', 'Shelter Drake'),
-                ('Blade', 'Shinobi Shadow'),
-                ('Blade', 'SilverWolf'),
-                ('Blade', 'Sphinx Cowl'),
-                ('Blade', 'Spider-Man'),
-                ('Blade', 'Starscream'),
-                ('Blade', 'Steel Samurai'),
-                ('Blade', 'Storm Pegasis'),
-                ('Blade', 'Talon Ptera'),
-                ('Blade', 'Thanos'),
-                ('Blade', 'The Mandalorian'),
-                ('Blade', 'Tusk Mammoth'),
-                ('Blade', 'Tyranno Beat'),
-                ('Blade', 'Unicorn Sting'),
-                ('Blade', 'Venom'),
-                ('Blade', 'Victory Valkyrie'),
-                ('Blade', 'Viper Tail'),
-                ('Blade', 'WeissTiger'),
-                ('Blade', 'Whale Wave'),
-                ('Blade', 'Wizard Rod'),
-                ('Blade', 'WizardArrow'),
-                ('Blade', 'Wyvern Gale'),
-                ('Blade', 'Yell Kong'),
-                ('Main Blade', 'Arc'),
-                ('Main Blade', 'Brave'),
-                ('Main Blade', 'Dark'),
-                ('Main Blade', 'Reaper'),
-                ('Ratchet', '0-80'),
-                ('Ratchet', '1-60'),
-                ('Ratchet', '1-80'),
-                ('Ratchet', '2-60'),
-                ('Ratchet', '2-70'),
-                ('Ratchet', '2-80'),
-                ('Ratchet', '3-60'),
-                ('Ratchet', '3-70'),
-                ('Ratchet', '3-80'),
-                ('Ratchet', '3-85'),
-                ('Ratchet', '4-55'),
-                ('Ratchet', '4-60'),
-                ('Ratchet', '4-70'),
-                ('Ratchet', '4-80'),
-                ('Ratchet', '5-60'),
-                ('Ratchet', '5-70'),
-                ('Ratchet', '5-80'),
-                ('Ratchet', '6-60'),
-                ('Ratchet', '6-80'),
-                ('Ratchet', '7-60'),
-                ('Ratchet', '7-70'),
-                ('Ratchet', '7-80'),
-                ('Ratchet', '9-60'),
-                ('Ratchet', '9-70'),
-                ('Ratchet', '9-80')
-            ]
+        parts = [
+            ('Assist Blade', 'Bumper'),
+            ('Assist Blade', 'Round'),
+            ('Assit Blade', 'Slash'),
+            ('Lock Chip', 'Dran'),
+            ('Lock Chip', 'Hells'),
+            ('Lock Chip', 'Perseus'),
+            ('Lock Chip', 'Wizard'),
+            ('Assist Blade', 'Bumper'),
+            ('Assist Blade', 'Round'),
+            ('Assit Blade', 'Slash'),
+            ('Lock Chip', 'Dran'),
+            ('Lock Chip', 'Hells'),
+            ('Lock Chip', 'Perseus'),
+            ('Lock Chip', 'Wizard'),
+            ('Bit', 'Accel'),
+            ('Bit', 'Ball'),
+            ('Bit', 'Bound Spike'),
+            ('Bit', 'Cyclone'),
+            ('Bit', 'Disk Ball'),
+            ('Bit', 'Dot'),
+            ('Bit', 'Elevate'),
+            ('Bit', 'Free Ball'),
+            ('Bit', 'Gear Ball'),
+            ('Bit','Gear Flat'),
+            ('Bit', 'Gear Needle'),
+            ('Bit', 'Gear Point'),
+            ('Bit', 'Glide'),
+            ('Bit', 'Hexa'),
+            ('Bit', 'High Needle'),
+            ('Bit', 'High taper'),
+            ('Bit', 'Level'),
+            ('Bit', 'Low Flat'),
+            ('Bit', 'Low Orb'),
+            ('Bit', 'Low Rush'),
+            ('Bit', 'Metal Needle'),
+            ('Bit', 'Needle'),
+            ('Bit', 'Orb'),
+            ('Bit', 'Point'),
+            ('Bit', 'Quake'),
+            ('Bit', 'Rubber Acce'),
+            ('Bit', 'Rush'),
+            ('Bit', 'Spike'),
+            ('Bit', 'Taper'),
+            ('Bit', 'Trans Point'),
+            ('Bit', 'Under Needle'),
+            ('Bit', 'Unite'),
+            ('Bit', 'Vortex'),
+            ('Bit', 'Wedge'),
+            ('Blade', 'AeroPegasus'),
+            ('Blade', 'Bite Croc'),
+            ('Blade', 'Black Shell'),
+            ('Blade', 'Captain America'),
+            ('Blade', 'CobaltDragoon'),
+            ('Blade', 'CobaltDrake'),
+            ('Blade', 'CrimsonGaruda'),
+            ('Blade', 'Darth Vader'),
+            ('Blade', 'DracielShield'),
+            ('Blade', 'DragoonStorm'),
+            ('Blade', 'Dran Buster'),
+            ('Blade', 'DranDagger'),
+            ('Blade', 'DranSword'),
+            ('Blade', 'DranzerSpiral'),
+            ('Blade', 'DrigerSlash'),
+            ('Blade', 'Ghost Circle'),
+            ('Blade', 'GolemRock'),
+            ('Blade', 'Hells Hammer'),
+            ('Blade', 'HellsChain'),
+            ('Blade', 'HellsScythe'),
+            ('Blade', 'Hover Wyvern'),
+            ('Blade', 'Impact Drake'),
+            ('Blade', 'Iron Man'),
+            ('Blade', 'Knife Shinobi'),
+            ('Blade', 'KnightLance'),
+            ('Blade', 'KnightMail'),
+            ('Blade', 'KnightShield'),
+            ('Blade', 'Leon Claw'),
+            ('Blade', 'LeonCrest'),
+            ('Blade', 'Lightning L-Drago (Rapid-Hit Type)'),
+            ('Blade', 'Lightning L-Drago (Upper Type)'),
+            ('Blade', 'Luke Skywalker'),
+            ('Blade', 'Megatron'),
+            ('Blade', 'Moff Gideon'),
+            ('Blade', 'Optimus Primal'),
+            ('Blade', 'Optimus Prime'),
+            ('Blade', 'Phoenix Rudder'),
+            ('Blade', 'Phoenix Wing'),
+            ('Blade', 'PhoenixFeather'),
+            ('Blade', 'Red Hulk'),
+            ('Blade', 'Rhino Horn'),
+            ('Blade', 'Roar Tyranno'),
+            ('Blade', 'SamuraiSaber'),
+            ('Blade', 'Savage Bear'),
+            ('Blade', 'SharkEdge'),
+            ('Blade', 'Shelter Drake'),
+            ('Blade', 'Shinobi Shadow'),
+            ('Blade', 'SilverWolf'),
+            ('Blade', 'Sphinx Cowl'),
+            ('Blade', 'Spider-Man'),
+            ('Blade', 'Starscream'),
+            ('Blade', 'Steel Samurai'),
+            ('Blade', 'Storm Pegasis'),
+            ('Blade', 'Talon Ptera'),
+            ('Blade', 'Thanos'),
+            ('Blade', 'The Mandalorian'),
+            ('Blade', 'Tusk Mammoth'),
+            ('Blade', 'Tyranno Beat'),
+            ('Blade', 'Unicorn Sting'),
+            ('Blade', 'Venom'),
+            ('Blade', 'Victory Valkyrie'),
+            ('Blade', 'Viper Tail'),
+            ('Blade', 'WeissTiger'),
+            ('Blade', 'Whale Wave'),
+            ('Blade', 'Wizard Rod'),
+            ('Blade', 'WizardArrow'),
+            ('Blade', 'Wyvern Gale'),
+            ('Blade', 'Yell Kong'),
+            ('Main Blade', 'Arc'),
+            ('Main Blade', 'Brave'),
+            ('Main Blade', 'Dark'),
+            ('Main Blade', 'Reaper'),
+            ('Ratchet', '0-80'),
+            ('Ratchet', '1-60'),
+            ('Ratchet', '1-80'),
+            ('Ratchet', '2-60'),
+            ('Ratchet', '2-70'),
+            ('Ratchet', '2-80'),
+            ('Ratchet', '3-60'),
+            ('Ratchet', '3-70'),
+            ('Ratchet', '3-80'),
+            ('Ratchet', '3-85'),
+            ('Ratchet', '4-55'),
+            ('Ratchet', '4-60'),
+            ('Ratchet', '4-70'),
+            ('Ratchet', '4-80'),
+            ('Ratchet', '5-60'),
+            ('Ratchet', '5-70'),
+            ('Ratchet', '5-80'),
+            ('Ratchet', '6-60'),
+            ('Ratchet', '6-80'),
+            ('Ratchet', '7-60'),
+            ('Ratchet', '7-70'),
+            ('Ratchet', '7-80'),
+            ('Ratchet', '9-60'),
+            ('Ratchet', '9-70'),
+            ('Ratchet', '9-80')
+        ]
 
-            try:
-                for type, name in parts:
-                    self.cursor.execute(
-                        "INSERT INTO tblParts (type, name) VALUES (%s, %s)",
-                        (type, name)
-                    )
-                self.connection.commit()
-                print("Initial data inserted into tblParts successfully")
-            except mysql.connector.Error as err:
-                print(f"Error inserting data into tblParts: {err}")
+        try:
+            for type, name in parts:
+                self.cursor.execute(
+                    "INSERT INTO tblParts (type, name) VALUES (%s, %s)",
+                     (type, name)
+                )
+            self.connection.commit()
+            print("Initial data inserted into tblParts successfully")
+        except mysql.connector.Error as err:
+            print(f"Error inserting data into tblParts: {err}")
 
     def get_connection(self):
         return self.connection
