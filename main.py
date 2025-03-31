@@ -403,44 +403,39 @@ class main:
         headers = [
             "Rank", "Username", "Total Points", "Win Percentage", "Region"
         ]       
-
-        # We only generate the Main and Region baords if it is a store championship       
-        if self.config['tournament_data']['is_store_championship'] == 1:
-            #region Main Board
-            with open(filename, 'w', newline='') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(headers)
-                for data in results[0]:
-                    for row in data:
-                        print(f"Row: {row}")
-                        csvwriter.writerow(list(row))
+        with open(filename, 'w', newline='') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(headers)
+            for data in results[0]:
+                for row in data:
+                    print(f"Row: {row}")
+                    csvwriter.writerow(list(row))
                     
-                print(f"csvwriter: {csvwriter}")
-            print(f"Main Leaderboard CSV file '{filename}' generated successfully.")
-            #endregion
+            print(f"csvwriter: {csvwriter}")
+        print(f"Main Leaderboard CSV file '{filename}' generated successfully.")
+        #endregion
             
-            #region Region Leaderboard
-            results.append([self.leaderboard.get_region_leaderboard(region)])
+        #region Region Leaderboard
+        results.append([self.leaderboard.get_region_leaderboard(region)])
             
-            filename = f"{self.region.get_region_by_id(region)[1]}_leaderboard.csv"
+        filename = f"{self.region.get_region_by_id(region)[1]}_leaderboard.csv"
             
-            #if file exists, delete it
-            try:
-                os.remove(filename)
-            except FileNotFoundError:
-                pass
+        #if file exists, delete it
+        try:
+            os.remove(filename)
+        except FileNotFoundError:
+            pass
             
-            # Write the results to a CSV file
-            with open(filename, 'w', newline='') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(headers)            
-                for data in results[1]:
-                    for row in data:
-                        print(f"Row: {row}")
-                        csvwriter.writerow(list(row))
-            #endregion
+        # Write the results to a CSV file
+        with open(filename, 'w', newline='') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(headers)            
+            for data in results[1]:
+                for row in data:
+                    print(f"Row: {row}")
+                    csvwriter.writerow(list(row))
+        #endregion
 
-        # Always generate the Tournament board
         #region Tournament Leaderboard
         torunament = self.modif_tournament.get_tournament_by_id(tournament_id)
         results.append([self.leaderboard.get_tournament_leaderboard(tournament_id)])

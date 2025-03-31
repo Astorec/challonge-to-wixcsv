@@ -83,7 +83,7 @@ class tournamentData:
         )
         return self.cursor.fetchone()
     
-    def add_placement(self, tournament_id, player_db_id, placement):        
+    def add_placement(self, tournament_id, player_db_id, placement, is_store_championship = True):        
         
         self.cursor.execute(
         f"UPDATE tblTournamentData SET`rank`=%s WHERE tournament_id=%s AND player_db_id=%s",
@@ -91,12 +91,9 @@ class tournamentData:
         )
             
         self.db.commit()
-        
-        self.cursor.execute(
-            "SELECT * FROM tblTournamentData WHERE tournament_id=%s AND player_db_id=%s",
-            (tournament_id, player_db_id)
-        )
-        return self.cursor.fetchone()
+
+        if not is_store_championship and placement <=16:
+            self.update_score_for_top_cut(tournament_id, player_db_id, is_store_championship)
     
     def get_top_cut_size(self, touranment_id):
         self.cursor.execute(
@@ -105,7 +102,7 @@ class tournamentData:
         )
         return self.cursor.fetchone()[0]
 
-    def update_score_for_top_cut(self, tournament_id, player_db_id):
+    def update_score_for_top_cut(self, tournament_id, player_db_id, is_store_championship):
         # Get the attendance_id from tblTournaments where the tournament_id is the one we're looking for
         # and get the top_cut from tblTournamentAttendance where the attendance_id is the one we just got
         self.cursor.execute(
@@ -130,19 +127,23 @@ class tournamentData:
         # For Top 1: 1st 5
         
         score_modifiers = []
-        if top_cut == 16:
-            score_modifiers = [10, 9, 8, 7, 6, 5, 4, 3]
-        elif top_cut == 8:
-            score_modifiers = [5, 4, 3, 2, 1, 1, 1, 1]
-        elif top_cut == 4:
-            score_modifiers = [5, 4, 3, 2]
-        elif top_cut == 2:
-            score_modifiers = [5, 4]
-        elif top_cut == 1:
-            score_modifiers = [5]
+
+        if is_store_championship:
+            if top_cut == 16:
+                score_modifiers = [10, 9, 8, 7, 6, 5, 4, 3, 1, 1, 1, 1, 1, 1, 1, 1]
+            elif top_cut == 8:
+                score_modifiers = [5, 4, 3, 2, 1, 1, 1, 1]
+            elif top_cut == 4:
+                score_modifiers = [5, 4, 3, 2]
+            elif top_cut == 2:
+                score_modifiers = [5, 4]
+            elif top_cut == 1:
+                score_modifiers = [5]
+            else:
+                print(f"Unknown top cut: {top_cut}")
+                return
         else:
-            print(f"Unknown top cut: {top_cut}")
-            return
+             score_modifiers = [10, 10, 10, 10, 6, 6, 6, 6, 4, 4, 4, 4, 4, 4, 4, 4]
         
         
         self.cursor.execute(

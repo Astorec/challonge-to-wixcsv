@@ -55,9 +55,8 @@ def calculate_top_cut(is_store_championship, tournament_id, calls_instance,  mod
                     loser_id = modif_participants.get_participant_by_player_id_tournament_id(m['loser_id'],tournament_id)[0][1]
                     modif_tournament_data.add_placement(tournament_id, winner_id, 3)
                     modif_tournament_data.add_placement(tournament_id, loser_id, 4)  
-                    if is_store_championship:
-                        modif_tournament_data.update_score_for_top_cut(tournament_id, winner_id)
-                        modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id)
+                    modif_tournament_data.update_score_for_top_cut(tournament_id, winner_id, is_store_championship)
+                    modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id, is_store_championship)
                     break
             
             # Sort finals matches by round
@@ -75,29 +74,29 @@ def calculate_top_cut(is_store_championship, tournament_id, calls_instance,  mod
                                         
                     
                     # Check if we are in finals
-                    if i + 1 == max_rounds:                    
-                        if is_store_championship:
-                            modif_tournament_data.update_score_for_top_cut(tournament_id, winner_id)
-                            modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id)
+                    if i + 1 == max_rounds:       
+                        
                         modif_tournament_data.add_placement(tournament_id, winner_id, 1)   
                         modif_tournament_data.add_placement(tournament_id, loser_id, 2)
+                        modif_tournament_data.update_score_for_top_cut(tournament_id, winner_id, is_store_championship)
+                        modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id, is_store_championship)
                     elif i + 1 == max_rounds - 1:
                         continue
                     else:                        
-                        modif_tournament_data.add_placement(tournament_id, loser_id, placement_copy)
+                        modif_tournament_data.add_placement(tournament_id, loser_id, placement_copy, is_store_championship )
 
-                        if placement_copy <= top_cut_size and is_store_championship:
-                            modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id)
+                        if placement_copy <= top_cut_size:
+                            modif_tournament_data.update_score_for_top_cut(tournament_id, loser_id, is_store_championship)
                         placement_copy -= 1
 
-            calculate_rest_of_rankings(tournament_id, modif_tournament_data, 4)            
+            calculate_rest_of_rankings(tournament_id, modif_tournament_data, placement, is_store_championship)            
             for p in participants:            
                 modif_tournament_data.update_win_percentage(tournament_id, p[1])
                 
                 
         modif_tournament.set_finalized(tournament_id)
     
-def calculate_rest_of_rankings(tournament_id, modif_tournament_data, placement):
+def calculate_rest_of_rankings(tournament_id, modif_tournament_data, placement, is_store_championship):
     all_players = modif_tournament_data.get_all_players_with_scores(tournament_id)
     all_players.sort(key=lambda x: x[3], reverse=True)
     
@@ -106,7 +105,7 @@ def calculate_rest_of_rankings(tournament_id, modif_tournament_data, placement):
         player = list(player)
         if player[5] == 0:
                 placement += 1
-                modif_tournament_data.add_placement(tournament_id, player[2], placement)                
+                modif_tournament_data.add_placement(tournament_id, player[2], placement, is_store_championship)                
         else:
             continue
     
