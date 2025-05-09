@@ -136,9 +136,9 @@ class tournamentData:
             elif top_cut == 4:
                 score_modifiers = [5, 4, 3, 2]
             elif top_cut == 2:
-                score_modifiers = [5, 4]
+                score_modifiers = [5, 4, 0, 0]
             elif top_cut == 1:
-                score_modifiers = [5]
+                score_modifiers = [5, 0, 0, 0]
             else:
                 print(f"Unknown top cut: {top_cut}")
                 return

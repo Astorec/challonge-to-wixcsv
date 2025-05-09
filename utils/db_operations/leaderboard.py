@@ -8,7 +8,7 @@ class leaderboard:
         # Query to get the tournament data with player count
         query = """
 SELECT
-		ROW_NUMBER() OVER (ORDER BY SUM(td.`rank` ) ASC) AS player_rank,
+		ROW_NUMBER() OVER (ORDER BY SUM(td.score ) DESC) AS player_rank,
         COALESCE(p.username, p.name) AS display_name,
         SUM(td.score) AS total_score,        
         ROUND(
@@ -24,7 +24,7 @@ SELECT
             tblPlayers p ON td.player_db_id = p.id
         JOIN
             tblTournaments t ON td.tournament_id = t.id
-        JOIN
+        JOIN    
             tblRegions r ON p.region = r.id
         GROUP BY
             p.name,
@@ -43,7 +43,7 @@ SELECT
         # Query to get the tournament data with player count for a specific tournament
         query = """
         SELECT
-            ROW_NUMBER() OVER (ORDER BY SUM(td.`rank` ) ASC) AS player_rank,
+            ROW_NUMBER() OVER (ORDER BY SUM(td.score ) ASC) AS player_rank,
             COALESCE(p.username, p.name) AS display_name,    
             td.score,
                     ROUND(
@@ -81,7 +81,7 @@ SELECT
         # Query to get the tournament data with player count for a specific region
         query = """
       SELECT
-		ROW_NUMBER() OVER (ORDER BY SUM(td.`rank` ) ASC) AS player_rank,
+		ROW_NUMBER() OVER (ORDER BY SUM(td.score ) DESC) AS player_rank,
         COALESCE(p.username, p.name) AS display_name,
         SUM(td.score) AS total_score,
                 ROUND(

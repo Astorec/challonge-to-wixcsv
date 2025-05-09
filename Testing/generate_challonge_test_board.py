@@ -18,11 +18,7 @@ else:
 
 def create_challonge_tournament():
     challonge.set_credentials(config['challonge_api']['username'], config['challonge_api']['key'])
-    tournament = challonge.tournaments.create(
-        "Test Tournament For Challonge To Wix Project Top 8",
-        "test_tournament_for_challonge_to_wix_project_Top_8",
-        "double elimination"
-    )
+    tournament = challonge.tournaments.show("1savs9wo")
     return tournament
 
 def create_challonge_participants(participant_count):
@@ -37,9 +33,9 @@ def create_challonge_participants(participant_count):
         participants.append(name)
     
     
-    challonge.participants.bulk_add(tournament['id'], participants)
-    
-tournament = create_challonge_tournament()
+    challonge.participants.bulk_add(tournament['url'], participants)
+
+create_challonge_tournament()
 create_challonge_participants(32)
 
 # Print the tournament URL returned from Challonge
