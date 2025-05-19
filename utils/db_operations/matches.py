@@ -3,7 +3,9 @@ class matches:
         self.db = db
         self.cursor = db.cursor()
         
-    def add_match(self, match_id, player1_id, player2_id, tournament_id):
+    def add_match(self, match_id, round, player1_id, player2_id, tournament_id):
+        isFinals = 0
+
         # check if match already exists
         self.cursor.execute(
             "SELECT * FROM tblMatches WHERE match_id=%s AND player1_id=%s AND player2_id=%s AND tournament_id=%s",
@@ -15,8 +17,23 @@ class matches:
             return result
         
         self.cursor.execute(
-            "INSERT INTO tblMatches (match_id, player1_id, player2_id, tournament_id) VALUES (%s,%s, %s, %s)",
-            (match_id, player1_id, player2_id, tournament_id)
+            "SELECT * FROM tblParticipants WHERE group_id=%s AND tournament_id=%s",
+            (player1_id, tournament_id)
+        )
+
+        player1 = self.cursor.fetchone()
+        if not player1:
+            self.cursor.execute(
+                "SELECT * FROM tblParticipants WHERE player_id=%s AND tournament_id=%s",
+                (player1_id, tournament_id)
+            )
+            player1 = self.cursor.fetchone()
+            isFinals = 1
+
+        
+        self.cursor.execute(
+            "INSERT INTO tblMatches (match_id, round, player1_id, player2_id, tournament_id, is_finals) VALUES (%s,%s,%s, %s, %s, %s)",
+            (match_id, round, player1_id, player2_id, tournament_id, isFinals)
         )
         self.db.commit()
         
@@ -87,10 +104,15 @@ class matches:
             (player1_id, player2_id, tournament_id)
         )
         return self.cursor.fetchone()
-    def update_match_winner(self, match_id, winner_id, loser_id):
+    def update_match_winner(self, match_id, winner_id, loser_id, scores):
+        # Extract scores from the string. x-y x is the score of player1 and y is the score of player2
+        scores = scores.split(" ")
+        player1_score = scores[0].split("-")[0]
+        player2_score = scores[0].split("-")[1]
+
         self.cursor.execute(
-            "UPDATE tblMatches SET winner_id=%s, loser_id=%s WHERE id=%s",
-            (winner_id, loser_id, match_id)
+            "UPDATE tblMatches SET winner_id=%s, loser_id=%s, p1_score=%s, p2_score=%s WHERE id=%s",
+            (winner_id, loser_id, player1_score, player2_score, match_id)
         )
         self.db.commit()
         

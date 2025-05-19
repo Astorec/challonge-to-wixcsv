@@ -164,7 +164,7 @@ def get_finals_players(tournament_id, calls_instance, stage_two_participants, mo
             # Proceed with your existing logic
             match = modif_matches.get_match_by_id(m['id'])
             if match is None:
-                match = modif_matches.add_match(m['id'], m['player1_id'], m['player2_id'], tournament_id)
+                match = modif_matches.add_match(m['id'], m['round'], m['player1_id'], m['player2_id'], tournament_id)
                 print(match)
                     
             if m not in finals_matches:
@@ -187,7 +187,7 @@ def get_finals(tournament_id, modif_matches, modif_participants, modif_tournamen
             for p in participants:
                 match = None
                 if m['player1_id'] == p[3] or m['player2_id'] == p[3]:
-                    match = modif_matches.add_match(m['id'], m['player1_id'], m['player2_id'], tournament_id)
+                    match = modif_matches.add_match(m['id'], m['round'], m['player1_id'], m['player2_id'], tournament_id)
                 if m['winner_id'] is not None and m['loser_id'] is not None and match is not None:
                     modif_matches.update_match_winner(match[0], m['winner_id'], m['loser_id'])
     

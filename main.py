@@ -131,7 +131,7 @@ class main:
                     print(f"Error: Match with ID {m['id']} has no player IDs. Skipping...")
                     continue
                 print(f"Adding match with ID {m['id']}, Player 1 ID: {m['player1_id']}, Player 2 ID: {m['player2_id']}")
-                match_db = self.modif_matches.add_match(m['id'], m['player1_id'], m['player2_id'], tournament_db[0])
+                match_db = self.modif_matches.add_match(m['id'], m['round'], m['player1_id'], m['player2_id'], tournament_db[0])
                 
                 if match_db is None:
                     print(f"Error: Failed to add match with ID {m['id']}. Player 1 ID was: {m['player1_id']}, Player 2 ID was: {m['player2_id']}. Skipping...")
@@ -156,7 +156,7 @@ class main:
                         
                         winner_player = self.modif_participants.get_participant_by_player_id_tournament_id(m['winner_id'], tournament_db[0])[0]
                         loser_player = self.modif_participants.get_participant_by_player_id_tournament_id(m['loser_id'], tournament_db[0])[0]
-                        match_db = self.modif_matches.update_match_winner(match_db[0], m['winner_id'], m['loser_id'])
+                        match_db = self.modif_matches.update_match_winner(match_db[0], m['winner_id'], m['loser_id'], m['scores_csv'])
                         if match_db is None:
                             print(f"Error: Failed to update match winner for match ID {m['id']}.")
                             continue       

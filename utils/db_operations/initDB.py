@@ -100,6 +100,9 @@ class initDB:
             'tblMatches': (
                 "CREATE TABLE IF NOT EXISTS tblMatches ("
                 " id INT AUTO_INCREMENT PRIMARY KEY,"
+                " round INT NULL,"
+                " p1_score INT NOT NULL DEFAULT 0,"
+                " p2_score INT NOT NULL DEFAULT 0,"
                 " player1_id INT NULL,"
                 " player2_id INT NULL,"
                 " winner_id INT NULL,"
