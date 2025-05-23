@@ -124,6 +124,7 @@ class main:
         for m in matches:
             print(f"Processing match with ID {m['id']}")
             match_db = self.modif_matches.get_match_by_id(m['id'])
+
             print(match_db)
             if match_db is None:
                 print(f"Match with ID {m['id']} not found in database.")
@@ -136,8 +137,29 @@ class main:
                 if match_db is None:
                     print(f"Error: Failed to add match with ID {m['id']}. Player 1 ID was: {m['player1_id']}, Player 2 ID was: {m['player2_id']}. Skipping...")
                     continue
+            else:
+
+                if match_db[0] == 316:
+                    print("debug")
+                # Check to see if both player IDs are not none
+                if m['player1_id'] is None and m['player2_id'] is None:
+                    print(f"Error: Match with ID {m['id']} has no player IDs. Skipping...")
+                    continue
+                
+                # Check to see if we need to add the player 1 iD or player 2 ID 
+                if m['player1_id'] is not None and match_db[1] is None:
+                    match_db = self.modif_matches.set_player1_id(match_db[5], match_db[0], m['player1_id'])
+                    if match_db is None:
+                        print(f"Error: Failed to set player 1 ID for match ID {m['id']}.")
+                        continue
+
+                if m['player2_id'] is not None and match_db[2] is None:
+                    match_db = self.modif_matches.set_player2_id(match_db[5],  match_db[0], m['player2_id'])
+                    if match_db is None:
+                        print(f"Error: Failed to set player 2 ID for match ID {m['id']}.")
+                        continue
             
-            if self.modif_participants.get_participant_by_id_tournament_id(m['player1_id'], tournament_db[0]) is not None or self.modif_participants.get_participant_by_id_tournament_id(m['player2_id'], tournament_db[0]) is not None:
+            if self.modif_participants.get_participant_by_id_tournament_id( m['player1_id'], tournament_db[0]) is not None or self.modif_participants.get_participant_by_id_tournament_id(m['player2_id'], tournament_db[0]) is not None:
                 self.modif_matches.set_match_to_final(match_db[7])
 
             

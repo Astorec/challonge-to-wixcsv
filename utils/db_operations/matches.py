@@ -43,6 +43,37 @@ class matches:
         )
         return self.cursor.fetchone()
     
+    def set_player1_id(self, tournament_id, match_id, player1_id):
+        self.cursor.execute(
+            "UPDATE tblMatches SET player1_id=%s WHERE tournament_id=%s AND id=%s",
+            ( player1_id, tournament_id,match_id)
+        )
+        self.db.commit()
+        
+        self.cursor.execute(
+            "SELECT * FROM tblMatches WHERE tournament_id=%s AND id=%s",
+            (tournament_id, match_id,)
+        )
+        return self.cursor.fetchone()
+    
+    def set_player2_id(self, tournament_id, match_id, player2_id):
+        try:
+            self.cursor.execute(
+                "UPDATE tblMatches SET player2_id=%s WHERE tournament_id=%s AND id=%s",
+                (player2_id, tournament_id, match_id)
+            )
+            self.db.commit()
+        except Exception as e:
+            print(f"Database error: {e}")
+            # Or use proper logging
+            self.db.rollback()
+        
+            self.cursor.execute(
+            "SELECT * FROM tblMatches WHERE tournament_id=%s AND id=%s",
+            (tournament_id, match_id,)
+        )
+        return self.cursor.fetchone()
+
     def get_matches_by_tournament_id(self, tournament_id):
         self.cursor.execute(
             "SELECT * FROM tblMatches WHERE tournament_id=%s",
