@@ -129,3 +129,10 @@ class tournament:
             (tournament_id, tournament_id,)
         )
         return self.cursor.fetchone()
+    
+    def get_unfinalized_tournaments(self):
+        cursor = self.db.cursor()
+        cursor.execute('SELECT * FROM tblTournaments WHERE finalized = 0')
+        results = cursor.fetchall()
+        cursor.close()
+        return results
